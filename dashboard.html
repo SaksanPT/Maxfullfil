@@ -20,7 +20,7 @@
         .border-blue { border-left-color: #3498db; } .text-blue { color: #3498db; }
         .border-red { border-left-color: #e74c3c; } .text-red { color: #e74c3c; }
         .border-orange { border-left-color: #f39c12; } .text-orange { color: #f39c12; }
-        /* 🔥 เพิ่มสีเขียวสำหรับ Not Zero 🔥 */
+        /* 🔥 สีเขียวสำหรับ Not Zero 🔥 */
         .border-green { border-left-color: #27ae60; } .text-green { color: #27ae60; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
@@ -100,7 +100,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // ⚠️⚠️ อย่าลืมเช็ค URL ตรงนี้ให้ถูกต้อง ⚠️⚠️
+    // ⚠️⚠️ อย่าลืมเช็ค URL ตรงนี้ให้ถูกต้อง เป็น Deployment ล่าสุด ⚠️⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySWsqrPKZWK-SeETlS1FIHgMZofPkeEbmERh1MDjpCshhFbPIVQoPL4jWPwFHlsQzw/exec';
     
     let allData = [];
@@ -118,27 +118,24 @@
     async function loadDashboardData() {
         showLoading();
         try {
-            const res = await fetch(SCRIPT_URL + '?action=dashboard');
+            // 🔥🔥 แก้ไข: เพิ่ม &t=timestamp เพื่อแก้ปัญหา Cache ไม่ยอมอัปเดต 🔥🔥
+            const res = await fetch(SCRIPT_URL + '?action=dashboard&t=' + new Date().getTime());
             const json = await res.json();
             
             if (json.status !== 'success') throw new Error(json.message);
 
-            // 🔥🔥 ส่วนคำนวณ Stats (เพิ่ม NonZero) 🔥🔥
+            // คำนวณ Stats
             if (json.stats) {
                 const total = json.stats.totalClassA;
                 const zero = json.stats.zeroStock;
-                const nonZero = total - zero; // คำนวณจำนวนที่มีของ
+                const nonZero = total - zero;
 
-                // คำนวณเปอร์เซ็นต์
                 const zeroPercent = total > 0 ? ((zero / total) * 100).toFixed(2) : 0;
                 const nonZeroPercent = total > 0 ? ((nonZero / total) * 100).toFixed(2) : 0;
 
-                // แสดงผล
                 document.getElementById('statTotal').innerText = total.toLocaleString();
                 document.getElementById('statZero').innerText = zero.toLocaleString();
                 document.getElementById('statPercent').innerText = zeroPercent + "%";
-                
-                // แสดงผลช่องใหม่ (สีเขียว)
                 document.getElementById('statNonZeroPercent').innerText = nonZeroPercent + "%";
             }
 
@@ -161,10 +158,11 @@
         finally { hideLoading(); }
     }
 
-    // --- 2. กราฟ (ยังคง Plot แค่ % ของหมด ตามที่ขอ) ---
+    // --- 2. กราฟ ---
     async function loadHistoryChart() {
         try {
-            const res = await fetch(SCRIPT_URL + '?action=history');
+            // 🔥🔥 แก้ไข: เพิ่ม &t=timestamp เช่นกัน 🔥🔥
+            const res = await fetch(SCRIPT_URL + '?action=history&t=' + new Date().getTime());
             const json = await res.json();
             if (json.status === 'success') {
                 renderChart(json.data);
@@ -177,7 +175,7 @@
             let d = new Date(row[0]);
             return isNaN(d) ? row[0].substring(5) : d.toLocaleDateString('th-TH', {day:'numeric', month:'short'});
         });
-        const percents = data.map(row => parseFloat(row[3])); // ช่องที่ 4 คือ % ของหมด
+        const percents = data.map(row => parseFloat(row[3]));
 
         const ctx = document.getElementById('myChart').getContext('2d');
         if (myChart) myChart.destroy();
