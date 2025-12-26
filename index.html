@@ -35,9 +35,12 @@
 
 <div class="container py-4">
     
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        <a href="po_pending.html" class="btn btn-outline-success fw-bold px-4">
+            <i class="fas fa-dolly-flatbed me-2"></i> สถานีค้างรับ
+        </a>
         <a href="dashboard.html" class="btn btn-outline-primary fw-bold px-4">
-            <i class="fas fa-chart-line me-2"></i> ไปหน้า Dashboard (Class A)
+            <i class="fas fa-chart-line me-2"></i> ไปหน้า Dashboard
         </a>
     </div>
 
@@ -81,7 +84,7 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script>
-    // ⚠️⚠️ แก้ URL ให้เป็น Deployment ล่าสุด ⚠️⚠️
+    // ⚠️⚠️ URL ล่าสุดที่คุณให้มา ⚠️⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDhROGmEtVLx9p202hfS44dOARYM7g-x_33tIcXU_olgrcrW6wVmcyLioa1J3l3nc_/exec';
 
     const generalFileInput = document.getElementById('generalFileInput');
@@ -134,7 +137,7 @@
     }
 
     // --- Action Functions ---
-    function runCalculate(){ if(confirm("ยืนยันคำนวณ?")){ showLoading("กำลังคำนวณ..."); postAction('run_calculate'); } }
+    function runCalculate(){ if(confirm("ยืนยันคำนวณ?")){ showLoading("กำลังคำนวณและบันทึกสถิติ..."); postAction('run_calculate'); } }
     function runClearData(){ if(confirm("ยืนยันล้างข้อมูล?")){ showLoading("กำลังล้างข้อมูล..."); postAction('run_clear'); } }
 
     function postAction(act){
@@ -143,10 +146,10 @@
         .catch(e=>{ hideLoading(); alert("Error: "+e); });
     }
 
-    // --- Table Functions ---
+    // --- Table Functions (เพิ่ม &t=time เพื่อแก้ Cache) ---
     async function loadData(){
         try {
-            const r = await fetch(SCRIPT_URL+'?action=view');
+            const r = await fetch(SCRIPT_URL+'?action=view&t='+new Date().getTime());
             const d = await r.json();
             if(d.status==='success' && d.data.length){
                 allData = [d.data[0], ...d.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))];
@@ -176,11 +179,11 @@
         renderTable([allData[0], ...f]);
     }
 
-    // 🔥🔥 Export ทั้งชีต (ตามที่แก้ไขใน Code.gs) 🔥🔥
+    // --- Export Function ---
     async function exportData() {
         showLoading("กำลัง Export ข้อมูล...");
         try {
-            const res = await fetch(SCRIPT_URL + '?action=export');
+            const res = await fetch(SCRIPT_URL + '?action=export&t='+new Date().getTime());
             const json = await res.json();
             hideLoading();
             if (json.status !== 'success') throw new Error('Export Error');
@@ -192,5 +195,4 @@
     }
 </script>
 </body>
-
 </html>

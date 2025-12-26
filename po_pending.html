@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถานีค้างรับ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; }
+        .main-card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 30px; }
+        
+        .card-header { 
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); 
+            color: white; padding: 20px; 
+        }
+
+        /* Table Styles */
+        .table { margin-bottom: 0; }
+        .table thead th { 
+            background-color: #27ae60 !important; 
+            color: white; 
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer; /* เมาส์เป็นรูปมือเมื่อชี้หัวตาราง */
+            user-select: none;
+        }
+        .table thead th:hover {
+            background-color: #1e8449 !important; /* เข้มขึ้นตอนชี้ */
+        }
+
+        /* 🔥 Custom Row Colors (Group by PO) 🔥 */
+        tr.group-color-1 td { background-color: #e8f8f5 !important; } /* เขียวพาสเทล */
+        tr.group-color-2 td { background-color: #ffffff !important; } /* ขาว */
+        
+        /* Hover Effect */
+        tbody tr:hover td {
+            background-color: #d1f2eb !important; 
+            transition: 0.2s;
+        }
+        
+        td { vertical-align: middle; padding: 10px; }
+        
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status"></div>
+    <div class="mt-3 fw-bold text-success">กำลังโหลดข้อมูล...</div>
+</div>
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between mb-3">
+        <a href="index.html" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> กลับหน้าหลัก
+        </a>
+        <button onclick="exportToExcel()" class="btn btn-success rounded-pill px-4 fw-bold">
+            <i class="fas fa-file-excel me-2"></i> Export Excel
+        </button>
+    </div>
+
+    <div class="card main-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="m-0"><i class="fas fa-dolly-flatbed me-2"></i>รายการสถานีค้างรับ</h4>
+            <span class="badge bg-light text-success fs-6" id="rowCount">0 รายการ</span>
+        </div>
+        <div class="card-body">
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fas fa-gas-pump text-success"></i></span>
+                        <select id="stationFilter" class="form-select" onchange="applyFilters()">
+                            <option value="">แสดงทุกสถานี</option>
+                            </select>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาเลข PO, รหัสสินค้า..." onkeyup="applyFilters()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 75vh;">
+                <table class="table table-hover border" id="poTable">
+                    <thead class="sticky-top shadow-sm" id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            
+            <div id="noDataMsg" class="text-center py-5 text-muted" style="display:none;">
+                <i class="fas fa-inbox fa-3x mb-3"></i><br>ไม่พบข้อมูล
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script>
+    // ⚠️ ตรวจสอบ URL ⚠️
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDhROGmEtVLx9p202hfS44dOARYM7g-x_33tIcXU_olgrcrW6wVmcyLioa1J3l3nc_/exec';
+    
+    let allData = [];      // ข้อมูลทั้งหมด (รวม Header)
+    let displayData = [];  // ข้อมูลที่กำลังแสดงผล (ผ่านการกรองแล้ว)
+    let sortDirection = 1; // 1 = Asc, -1 = Desc
+    let lastSortCol = -1;  // จำคอลัมน์ล่าสุดที่ Sort
+
+    window.onload = loadPOData;
+
+    function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+    function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+    async function loadPOData() {
+        showLoading();
+        try {
+            const res = await fetch(SCRIPT_URL + '?action=po_pending&t=' + new Date().getTime());
+            const json = await res.json();
+            
+            if (json.status !== 'success') throw new Error(json.message);
+
+            const rawData = json.data;
+            if (!rawData || rawData.length === 0) {
+                document.getElementById('noDataMsg').style.display = 'block';
+                document.getElementById('rowCount').innerText = "0 รายการ";
+            } else {
+                const headers = rawData[0];
+                const body = rawData.slice(1);
+                allData = [headers, ...body]; // เก็บ Master Data
+                displayData = body;           // เริ่มต้นแสดงทั้งหมด
+
+                // สร้าง Header พร้อมฟังก์ชัน Sort
+                renderHeader(headers);
+                
+                // สร้าง Dropdown สถานี (สมมติสถานีอยู่ Col Index 2: ชื่อสถานี)
+                populateStationFilter(body, 2); 
+
+                // สร้างตาราง
+                renderTable(body);
+            }
+        } catch (err) { 
+            alert("Error: " + err.message); 
+        } finally { 
+            hideLoading(); 
+        }
+    }
+
+    // --- 🔥 1. สร้าง Header แบบกดเรียงได้ 🔥 ---
+    function renderHeader(headers) {
+        let headHTML = '<tr>';
+        headers.forEach((h, index) => {
+            headHTML += `<th onclick="sortTable(${index})">
+                            ${h} <i class="fas fa-sort small text-white-50 ms-1"></i>
+                         </th>`;
+        });
+        headHTML += '</tr>';
+        document.getElementById('tableHead').innerHTML = headHTML;
+    }
+
+    // --- 🔥 2. Logic จัดสีตามกลุ่ม PO 🔥 ---
+    function renderTable(rows) {
+        const tbody = document.getElementById('tableBody');
+        const noData = document.getElementById('noDataMsg');
+        
+        if (rows.length === 0) {
+            tbody.innerHTML = '';
+            noData.style.display = 'block';
+            document.getElementById('rowCount').innerText = "0 รายการ";
+            return;
+        }
+
+        noData.style.display = 'none';
+        let html = '';
+        
+        // ตัวแปรสำหรับสลับสี
+        let lastPO = null;
+        let isGroup1 = true; // true = สีเขียว, false = สีขาว
+
+        rows.forEach(row => {
+            const currentPO = row[0]; // สมมติ PO อยู่คอลัมน์แรก (Index 0)
+
+            // ถ้าเลข PO เปลี่ยน ให้สลับสี
+            if (currentPO !== lastPO) {
+                isGroup1 = !isGroup1;
+                lastPO = currentPO;
+            }
+
+            const rowClass = isGroup1 ? 'group-color-1' : 'group-color-2';
+
+            html += `<tr class="${rowClass}">`;
+            row.forEach(cell => {
+                html += `<td>${cell}</td>`;
+            });
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+        document.getElementById('rowCount').innerText = `${rows.length.toLocaleString()} รายการ`;
+    }
+
+    // --- 🔥 3. สร้าง Dropdown Filter 🔥 ---
+    function populateStationFilter(rows, colIndex) {
+        const select = document.getElementById('stationFilter');
+        // ดึงรายชื่อสถานี (ไม่ซ้ำ)
+        const stations = [...new Set(rows.map(r => r[colIndex]))].sort();
+        
+        stations.forEach(station => {
+            if(station) { // ป้องกันค่าว่าง
+                const option = document.createElement('option');
+                option.value = station;
+                option.text = station;
+                select.appendChild(option);
+            }
+        });
+    }
+
+    // --- 🔥 4. ระบบ Filter (รวม Search + Dropdown) 🔥 ---
+    function applyFilters() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const stationVal = document.getElementById('stationFilter').value;
+        const stationColIndex = 2; // Index ของคอลัมน์ชื่อสถานี (ตามรูปภาพคือ Col 3 แต่ index array คือ 2)
+
+        const body = allData.slice(1);
+
+        const filtered = body.filter(row => {
+            // 1. เช็ค Dropdown
+            const matchStation = (stationVal === "") || (row[stationColIndex] === stationVal);
+            
+            // 2. เช็ค Text Search (หาทุกคอลัมน์)
+            const matchText = row.some(cell => String(cell).toLowerCase().includes(searchText));
+
+            return matchStation && matchText;
+        });
+
+        displayData = filtered; // อัปเดตข้อมูลที่แสดงผลปัจจุบัน
+        renderTable(filtered);
+    }
+
+    // --- 🔥 5. ระบบ Sort (เรียงข้อมูล) 🔥 ---
+    function sortTable(colIndex) {
+        // สลับทิศทางถ้ากดคอลัมน์เดิม
+        if (lastSortCol === colIndex) {
+            sortDirection *= -1;
+        } else {
+            sortDirection = 1;
+            lastSortCol = colIndex;
+        }
+
+        // เรียงข้อมูล displayData (เฉพาะที่กรองอยู่)
+        displayData.sort((a, b) => {
+            let valA = a[colIndex];
+            let valB = b[colIndex];
+
+            // พยายามแปลงเป็นตัวเลขถ้าทำได้ เพื่อให้เรียงเลขถูกต้อง
+            if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+                valA = parseFloat(valA);
+                valB = parseFloat(valB);
+            } else {
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+            }
+
+            if (valA < valB) return -1 * sortDirection;
+            if (valA > valB) return 1 * sortDirection;
+            return 0;
+        });
+
+        // อัปเดต icon ที่หัวตาราง (Optional UI polish)
+        updateHeaderIcons(colIndex, sortDirection);
+
+        renderTable(displayData);
+    }
+
+    function updateHeaderIcons(colIndex, dir) {
+        const headers = document.querySelectorAll('#tableHead th i');
+        headers.forEach((icon, idx) => {
+            icon.className = 'fas fa-sort small text-white-50 ms-1'; // Reset
+            if (idx === colIndex) {
+                icon.className = dir === 1 ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                icon.classList.remove('text-white-50');
+            }
+        });
+    }
+
+    // ฟังก์ชัน Export Excel (Export สิ่งที่เห็นอยู่หน้าจอ)
+    function exportToExcel() {
+        if (displayData.length === 0) { alert("ไม่มีข้อมูลให้ Export"); return; }
+        
+        const wb = XLSX.utils.book_new();
+        // เอา Header มารวมกับข้อมูลที่กรองแล้ว
+        const exportData = [allData[0], ...displayData];
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, "PO_Pending");
+        XLSX.writeFile(wb, "สถานีค้างรับ.xlsx");
+    }
+</script>
+
+</body>
+</html>
