@@ -20,7 +20,6 @@
         .border-blue { border-left-color: #3498db; } .text-blue { color: #3498db; }
         .border-red { border-left-color: #e74c3c; } .text-red { color: #e74c3c; }
         .border-orange { border-left-color: #f39c12; } .text-orange { color: #f39c12; }
-        /* 🔥 สีเขียวสำหรับ Not Zero 🔥 */
         .border-green { border-left-color: #27ae60; } .text-green { color: #27ae60; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
@@ -41,47 +40,34 @@
 
     <h5 class="text-muted mb-3">📌 สถานะปัจจุบัน (Today)</h5>
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="stat-card border-blue">
-                <div class="stat-number text-blue" id="statTotal">-</div>
-                <div class="stat-label">Class A ทั้งหมด</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card border-red">
-                <div class="stat-number text-red" id="statZero">-</div>
-                <div class="stat-label">ของหมด (J=0)</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card border-orange">
-                <div class="stat-number text-orange" id="statPercent">-%</div>
-                <div class="stat-label">อัตราส่วนของหมด</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card border-green">
-                <div class="stat-number text-green" id="statNonZeroPercent">-%</div>
-                <div class="stat-label">มีสินค้า (J≠0)</div>
-            </div>
-        </div>
+        <div class="col-6 col-md-3"><div class="stat-card border-blue"><div class="stat-number text-blue" id="statTotal">-</div><div class="stat-label">Class A ทั้งหมด</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-red"><div class="stat-number text-red" id="statZero">-</div><div class="stat-label">ของหมด (J=0)</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-orange"><div class="stat-number text-orange" id="statPercent">-%</div><div class="stat-label">อัตราส่วนของหมด</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-green"><div class="stat-number text-green" id="statNonZeroPercent">-%</div><div class="stat-label">มีสินค้า (J≠0)</div></div></div>
     </div>
 
-    <div class="dashboard-card card">
-        <div class="card-header bg-dark text-white">
-            <h5 class="m-0"><i class="fas fa-chart-line me-2"></i>แนวโน้ม % ของหมด (เดือนปัจจุบัน + เดือนก่อนหน้า)</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="dashboard-card card">
+                <div class="card-header bg-dark text-white"><h5 class="m-0"><i class="fas fa-chart-line me-2"></i>แนวโน้ม % ของหมด</h5></div>
+                <div class="card-body"><div style="height: 300px;"><canvas id="myChart"></canvas></div></div>
+            </div>
         </div>
-        <div class="card-body">
-            <div style="height: 300px;">
-                <canvas id="myChart"></canvas>
+        <div class="col-md-6">
+            <div class="dashboard-card card">
+                <div class="card-header bg-warning text-dark"><h5 class="m-0"><i class="fas fa-chart-pie me-2"></i>สัดส่วนสินค้าที่หมด (จำแนกตาม SKU)</h5></div>
+                <div class="card-body"><div style="height: 300px;"><canvas id="skuChart"></canvas></div></div>
             </div>
         </div>
     </div>
 
     <div class="dashboard-card card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="m-0"><i class="fas fa-list me-2"></i>รายละเอียดรายการ (J=0)</h5>
-            <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+            <h5 class="m-0"><i class="fas fa-list me-2"></i>รายละเอียดรายการของหมด (Stock=0)</h5>
+            <div class="d-flex gap-2">
+                <button onclick="exportToExcel()" class="btn btn-outline-light btn-sm fw-bold"><i class="fas fa-file-excel"></i> Export Excel</button>
+                <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+            </div>
         </div>
         <div class="card-body">
             <div class="row mb-3">
@@ -90,7 +76,12 @@
             </div>
             <div class="table-responsive">
                 <table class="table table-striped table-hover" id="dashTable">
-                    <thead class="table-dark text-center" id="tableHead"></thead>
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>PO</th><th>Plant</th><th>Class</th><th>Material</th><th>Description</th><th>Stock</th><th>Unit</th>
+                            <th class="bg-warning text-dark">ยอดขาย 30 วัน (Calc)</th>
+                        </tr>
+                    </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
@@ -99,12 +90,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script>
-    // ⚠️⚠️ URL ล่าสุดที่คุณให้มา ⚠️⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDhROGmEtVLx9p202hfS44dOARYM7g-x_33tIcXU_olgrcrW6wVmcyLioa1J3l3nc_/exec';
     
     let allData = [];
     let myChart = null;
+    let skuChart = null;
 
     window.onload = function() {
         loadDashboardData();
@@ -114,22 +106,18 @@
     function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
 
-    // --- 1. โหลดข้อมูลปัจจุบัน ---
     async function loadDashboardData() {
         showLoading();
         try {
-            // 🔥🔥 แก้ไข: เพิ่ม &t=timestamp เพื่อแก้ปัญหา Cache ไม่ยอมอัปเดต 🔥🔥
             const res = await fetch(SCRIPT_URL + '?action=dashboard&t=' + new Date().getTime());
             const json = await res.json();
             
             if (json.status !== 'success') throw new Error(json.message);
 
-            // คำนวณ Stats
             if (json.stats) {
                 const total = json.stats.totalClassA;
                 const zero = json.stats.zeroStock;
                 const nonZero = total - zero;
-
                 const zeroPercent = total > 0 ? ((zero / total) * 100).toFixed(2) : 0;
                 const nonZeroPercent = total > 0 ? ((nonZero / total) * 100).toFixed(2) : 0;
 
@@ -139,29 +127,58 @@
                 document.getElementById('statNonZeroPercent').innerText = nonZeroPercent + "%";
             }
 
-            // Table
-            const rawData = json.data;
+            const rawData = json.data; 
             if (!rawData || rawData.length === 0) {
                 document.getElementById('tableBody').innerHTML = '<tr><td colspan="100%" class="text-center py-5">✅ ไม่พบข้อมูลผิดปกติ</td></tr>';
                 document.getElementById('lastUpdate').innerText = "ไม่พบข้อมูล";
             } else {
-                const headers = rawData[0]; 
-                const body = rawData.slice(1);
-                allData = [headers, ...body];
-                
-                let headHTML = '<tr>'; headers.forEach(h => headHTML += `<th>${h}</th>`); headHTML += '</tr>';
-                document.getElementById('tableHead').innerHTML = headHTML;
-                renderTable(body);
+                allData = rawData;
+                renderTable(allData);
+                renderSkuChart(allData);
                 document.getElementById('lastUpdate').innerText = `Updated: ${new Date().toLocaleTimeString('th-TH')}`;
             }
         } catch (err) { alert("Error: " + err.message); }
         finally { hideLoading(); }
     }
 
-    // --- 2. กราฟ ---
+    function renderSkuChart(data) {
+        const counts = {};
+        data.forEach(row => {
+            const skuName = row[4]; 
+            counts[skuName] = (counts[skuName] || 0) + 1;
+        });
+
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+
+        const ctx = document.getElementById('skuChart').getContext('2d');
+        if (skuChart) skuChart.destroy();
+
+        skuChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        '#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#34495e', '#16a085'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} รายการ` } }
+                }
+            }
+        });
+    }
+
     async function loadHistoryChart() {
         try {
-            // 🔥🔥 แก้ไข: เพิ่ม &t=timestamp เช่นกัน 🔥🔥
             const res = await fetch(SCRIPT_URL + '?action=history&t=' + new Date().getTime());
             const json = await res.json();
             if (json.status === 'success') {
@@ -208,7 +225,6 @@
         });
     }
 
-    // --- 3. บันทึกสถิติ ---
     async function saveDailyStats() {
         if(!confirm("ยืนยันบันทึกสถิติของวันนี้?")) return;
         showLoading();
@@ -230,8 +246,17 @@
         rows.forEach(row => {
             html += '<tr>';
             row.forEach((cell, i) => {
-                let cls = (i === 5) ? 'text-center fw-bold text-danger' : (i === 6 ? 'text-center' : '');
-                html += `<td class="${cls}">${cell}</td>`;
+                let cls = '';
+                if (i === 5) cls = 'text-center fw-bold text-danger'; 
+                if (i === 7) cls = 'text-end fw-bold text-primary'; 
+                
+                let displayVal = cell;
+                if (i === 7 && !isNaN(cell)) {
+                    // 🔥🔥 Dashboard แสดงผลเป็นจำนวนเต็ม (ไม่เอาทศนิยม) 🔥🔥
+                    displayVal = Number(cell).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
+                }
+
+                html += `<td class="${cls}">${displayVal}</td>`;
             });
             html += '</tr>';
         });
@@ -240,8 +265,18 @@
     
     function filterTable() {
         const v = document.getElementById('searchInput').value.toLowerCase();
-        const f = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v)));
+        const f = allData.filter(r=>r.some(c=>String(c).toLowerCase().includes(v)));
         renderTable(f);
+    }
+
+    function exportToExcel() {
+        if (allData.length === 0) { alert("ไม่มีข้อมูลให้ Export"); return; }
+        const header = ["PO", "Plant", "Class", "Material", "Description", "Stock", "Unit", "Sales 30 Days"];
+        const exportData = [header, ...allData];
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Zero_Stock_Data");
+        XLSX.writeFile(wb, "Zero_Stock_Items.xlsx");
     }
 </script>
 
