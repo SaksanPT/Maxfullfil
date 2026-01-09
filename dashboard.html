@@ -90,10 +90,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
 <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDhROGmEtVLx9p202hfS44dOARYM7g-x_33tIcXU_olgrcrW6wVmcyLioa1J3l3nc_/exec';
     
+    Chart.register(ChartDataLabels);
+
     let allData = [];
     let myChart = null;
     let skuChart = null;
@@ -160,9 +164,7 @@
                 labels: labels,
                 datasets: [{
                     data: values,
-                    backgroundColor: [
-                        '#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#34495e', '#16a085'
-                    ],
+                    backgroundColor: ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#34495e', '#16a085'],
                     borderWidth: 1
                 }]
             },
@@ -171,7 +173,19 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} รายการ` } }
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw} รายการ` } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value, ctx) => value,
+                        display: function(context) {
+                            var dataset = context.chart.data.datasets[0];
+                            var value = dataset.data[context.dataIndex];
+                            var total = dataset.data.reduce((a, b) => a + b, 0);
+                            var percentage = (value / total) * 100;
+                            return percentage > 3; // โชว์เฉพาะ > 3%
+                        }
+                    }
                 }
             }
         });
@@ -220,7 +234,20 @@
                 scales: {
                     y: { beginAtZero: true, title: {display: true, text: 'Percentage (%)'} }
                 },
-                plugins: { legend: { display: false } }
+                plugins: { 
+                    legend: { display: false },
+                    // 🔥 เปิดให้แสดงตัวเลขบนกราฟเส้นอีกครั้ง 🔥
+                    datalabels: {
+                        display: true,
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#c0392b',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
             }
         });
     }
@@ -252,7 +279,7 @@
                 
                 let displayVal = cell;
                 if (i === 7 && !isNaN(cell)) {
-                    // 🔥🔥 Dashboard แสดงผลเป็นจำนวนเต็ม (ไม่เอาทศนิยม) 🔥🔥
+                    // แสดงจำนวนเต็ม
                     displayVal = Number(cell).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); 
                 }
 
