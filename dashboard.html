@@ -3,220 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Class A + Forecast</title>
+    <title>Dashboard & Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
-        .dashboard-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 20px; }
-        .card-header { padding: 15px 20px; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; padding-top: 70px; }
         
-        /* Custom Tab Styles */
-        .nav-tabs .nav-link { color: #666; font-weight: bold; border: none; border-bottom: 3px solid transparent; cursor: pointer; }
-        .nav-tabs .nav-link.active { color: #d32f2f; border-bottom: 3px solid #d32f2f; background: none; }
-        .nav-tabs .nav-link:hover { color: #b71c1c; }
+        /* 🔥 แก้ไข 1: เปลี่ยนสี Navbar เป็นสีแดงเข้ม (#d32f2f) ตามหน้าอื่นๆ 🔥 */
+        .navbar-custom { background-color: #2c3e50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .navbar-brand { color: white !important; font-weight: bold; }
+        .nav-link { color: rgba(255,255,255,0.9) !important; cursor: pointer; }
+        .nav-link:hover { color: white !important; }
 
-        .stat-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; height: 100%; border-left: 5px solid #ccc; }
-        .stat-number { font-size: 2rem; font-weight: bold; }
-        .stat-label { color: #666; font-size: 0.9rem; }
-        
-        /* Colors for Current Stats */
+        /* Login Overlay */
+        #login-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 9999; 
+            display: none; justify-content: center; align-items: center; 
+        }
+        .login-card { background: white; padding: 30px; border-radius: 15px; width: 350px; text-align: center; }
+
+        /* Stats Cards */
+        .stat-card { background: white; border-radius: 12px; padding: 15px; text-align: center; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
+        .stat-number { font-size: 1.8rem; font-weight: bold; }
         .border-blue { border-left-color: #3498db; } .text-blue { color: #3498db; }
         .border-red { border-left-color: #e74c3c; } .text-red { color: #e74c3c; }
         .border-orange { border-left-color: #f39c12; } .text-orange { color: #f39c12; }
         .border-green { border-left-color: #27ae60; } .text-green { color: #27ae60; }
-        
-        /* Colors for Forecast Stats (Theme Purple) */
         .border-fc-total { border-left-color: #6c757d; } .text-fc-total { color: #6c757d; }
         .border-fc-red { border-left-color: #c0392b; background-color: #fff5f5; } .text-fc-red { color: #c0392b; }
         .border-fc-orange { border-left-color: #d35400; } .text-fc-orange { color: #d35400; }
         .border-fc-green { border-left-color: #16a085; } .text-fc-green { color: #16a085; }
-
         .border-info { border-left-color: #17a2b8; } .text-info { color: #17a2b8; }
         .border-purple { border-left-color: #9b59b6; } .text-purple { color: #9b59b6; }
 
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        /* Loading */
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         
-        .sortable-header { cursor: pointer; user-select: none; transition: background-color 0.2s; }
-        .sortable-header:hover { background-color: #0d6efd !important; opacity: 0.9; }
+        /* Restricted Area */
+        #restrictedSection { display: none; }
+
+        /* 🔥 แก้ไข 2: ปรับแต่ง Tabs ให้เมื่อเลือกแล้วตัวอักษรเป็นสีแดงเข้ม (อ่านออก) 🔥 */
+        .card-header-dark {
+            background-color: #2c3e50; /* สีพื้นหลังหัวตารางเป็นสีน้ำเงินเข้ม (Contrast กับ Tab สีขาว) */
+            color: white;
+            padding: 15px 20px 0 20px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .nav-tabs { border-bottom: none; }
+        
+        /* สไตล์ปุ่ม Tab ปกติ (ยังไม่เลือก) */
+        .nav-tabs .nav-link {
+            color: rgba(255, 255, 255, 0.6); /* สีตัวอักษรจางๆ */
+            font-weight: bold;
+            border: none;
+            margin-right: 5px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* สไตล์ปุ่ม Tab เมื่อถูกเลือก (Active) -> เปลี่ยนตัวหนังสือเป็นสีแดงเข้ม */
+        .nav-tabs .nav-link.active {
+            background-color: blue; /* พื้นหลังสีขาว */
+            color: #d32f2f; /* 🔥 ตัวหนังสือสีแดงเข้ม (อ่านชัดเจนบนพื้นขาว) 🔥 */
+            border-bottom: none;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* เพิ่มเงาเล็กน้อยให้ดูนูน */
+        }
     </style>
 </head>
 <body>
 
 <div id="loadingOverlay">
-    <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
-    <div class="mt-3 fw-bold text-danger">กำลังประมวลผล...</div>
+    <div class="spinner-border text-danger" role="status"></div>
+    <div class="mt-2 text-danger fw-bold">กำลังโหลดข้อมูล...</div>
 </div>
 
+<div id="login-overlay">
+    <div class="login-card">
+        <h4 class="mb-4"><i class="fas fa-user-lock me-2"></i>เข้าสู่ระบบ</h4>
+        <form onsubmit="handleLogin(event)">
+            <input type="text" id="username" class="form-control mb-2" placeholder="Username" required>
+            <input type="password" id="password" class="form-control mb-3" placeholder="Password" required>
+            <button type="submit" class="btn btn-danger w-100 fw-bold">Login</button>
+        </form>
+        <button onclick="closeLogin()" class="btn btn-link text-secondary mt-2 btn-sm">ปิดหน้าต่าง (ดู Dashboard)</button>
+        <div id="loginError" class="text-danger mt-2 small"></div>
+    </div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="dashboard.html"><i class="fas fa-chart-line me-2"></i> Dashboard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link" href="index.html">หน้าจัดการ (Index)</a></li>
+                <li class="nav-item"><a class="nav-link" href="oil_order.html">สั่งน้ำมัน</a></li>
+                <li class="nav-item"><a class="nav-link" href="delivery_stats.html">รอบจัดส่ง</a></li>
+                <li class="nav-item"><a class="nav-link" href="po_pending.html">ค้างรับ</a></li>
+                <li class="nav-item ms-3">
+                    <button id="btnLogin" onclick="openLogin()" class="btn btn-light btn-sm fw-bold text-danger">Login</button>
+                    <div id="userMenu" style="display:none;">
+                        <span class="text-white me-2" id="userDisplay">User</span>
+                        <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
 <div class="container py-4">
-    <div class="d-flex justify-content-between mb-3">
-        <a href="index.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i> กลับหน้าหลัก</a>
-        <button onclick="saveDailyStats()" class="btn btn-success fw-bold"><i class="fas fa-save me-2"></i> บันทึกสถิติวันนี้</button>
+    
+    <h5 class="text-muted mb-3"><i class="fas fa-thumbtack me-2"></i>สถานะปัจจุบัน (Today)</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="stat-card border-blue"><div class="stat-number text-blue" id="statTotal">-</div><small>Class A ทั้งหมด</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-red"><div class="stat-number text-red" id="statZero">-</div><small>ของหมด (J=0)</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-orange"><div class="stat-number text-orange" id="statPercent">-%</div><small>สัดส่วนของหมด</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-green"><div class="stat-number text-green" id="statNonZeroPercent">-%</div><small>มีสินค้า (J≠0)</small></div></div>
     </div>
 
-    <h5 class="text-muted mb-2"><i class="fas fa-thumbtack me-2"></i>สถานะปัจจุบัน (Today)</h5>
+    <h5 class="text-muted mb-3"><i class="fas fa-magic me-2"></i>สถานะพยากรณ์ (หลังจากรับของ ME2N)</h5>
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="stat-card border-blue"><div class="stat-number text-blue" id="statTotal">-</div><div class="stat-label">Class A ทั้งหมด</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-red"><div class="stat-number text-red" id="statZero">-</div><div class="stat-label">ของหมด (J=0)</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-orange"><div class="stat-number text-orange" id="statPercent">-%</div><div class="stat-label">อัตราส่วนของหมด</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-green"><div class="stat-number text-green" id="statNonZeroPercent">-%</div><div class="stat-label">มีสินค้า (J≠0)</div></div></div>
-    </div>
-
-    <h5 class="text-muted mb-2 mt-4"><i class="fas fa-magic me-2"></i>สถานะพยากรณ์ (หลังจากรับของ ME2N)</h5>
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-total"><div class="stat-number text-fc-total" id="fcTotal">-</div><div class="stat-label">Class A ทั้งหมด</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-red"><div class="stat-number text-fc-red" id="fcZero">-</div><div class="stat-label">คาดว่าของหมด</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-orange"><div class="stat-number text-fc-orange" id="fcPercent">-%</div><div class="stat-label">อัตราส่วน (พยากรณ์)</div></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-green"><div class="stat-number text-fc-green" id="fcNonZeroPercent">-%</div><div class="stat-label">มีสินค้า (พยากรณ์)</div></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-total"><div class="stat-number text-fc-total" id="fcTotal">-</div><small>Class A ทั้งหมด</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-red"><div class="stat-number text-fc-red" id="fcZero">-</div><small>คาดว่าของหมด</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-orange"><div class="stat-number text-fc-orange" id="fcPercent">-%</div><small>อัตราส่วน (พยากรณ์)</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-green"><div class="stat-number text-fc-green" id="fcNonZeroPercent">-%</div><small>มีสินค้า (พยากรณ์)</small></div></div>
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-6 mb-2 mb-md-0">
+        <div class="col-md-6 mb-2">
             <div class="stat-card border-info d-flex align-items-center justify-content-between px-4 py-3">
-                <div class="text-start">
-                    <h2 class="stat-number text-info mb-0" id="statDOH">-</h2>
-                    <div class="stat-label text-muted">DOH ปัจจุบัน (เฉลี่ย)</div>
-                </div>
+                <div class="text-start"><h2 class="stat-number text-info mb-0" id="statDOH">-</h2><div class="stat-label text-muted">DOH ปัจจุบัน (เฉลี่ย)</div></div>
                 <i class="fas fa-box-open fa-2x text-info opacity-50"></i>
             </div>
         </div>
         <div class="col-md-6">
             <div class="stat-card border-purple d-flex align-items-center justify-content-between px-4 py-3">
-                <div class="text-start">
-                    <h2 class="stat-number text-purple mb-0" id="statFcDOH">-</h2>
-                    <div class="stat-label text-muted">Forecast DOH (เฉลี่ย)</div>
-                </div>
+                <div class="text-start"><h2 class="stat-number text-purple mb-0" id="statFcDOH">-</h2><div class="stat-label text-muted">Forecast DOH (เฉลี่ย)</div></div>
                 <i class="fas fa-chart-line fa-2x text-purple opacity-50"></i>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="dashboard-card card">
-                <div class="card-header bg-dark text-white"><h5 class="m-0"><i class="fas fa-chart-line me-2"></i>แนวโน้ม % ของหมด</h5></div>
-                <div class="card-body"><div style="height: 300px;"><canvas id="myChart"></canvas></div></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="dashboard-card card">
-                <div class="card-header bg-warning text-dark"><h5 class="m-0"><i class="fas fa-chart-pie me-2"></i>สัดส่วนสินค้าที่หมด (จำแนกตาม SKU)</h5></div>
-                <div class="card-body"><div style="height: 300px;"><canvas id="skuChart"></canvas></div></div>
-            </div>
-        </div>
+    <div class="row mb-4">
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header bg-dark text-white">แนวโน้ม % ของหมด</div><div class="card-body"><canvas id="myChart" style="height:250px;"></canvas></div></div></div>
+        <div class="col-md-6"><div class="card shadow-sm h-100"><div class="card-header bg-warning text-dark">สัดส่วนสินค้าหมด (SKU)</div><div class="card-body"><canvas id="skuChart" style="height:250px;"></canvas></div></div></div>
     </div>
 
-    <div class="dashboard-card card">
-        <div class="card-header bg-white border-bottom">
-            <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                <li class="nav-item"><button class="nav-link active" id="tab-stockout" onclick="switchTab('stockout')"><i class="fas fa-exclamation-triangle me-2"></i>รายการของหมด (Stock=0)</button></li>
-                <li class="nav-item"><button class="nav-link" id="tab-doh" onclick="switchTab('doh')"><i class="fas fa-cubes me-2"></i>สถานะ DOH (Current)</button></li>
-                <li class="nav-item"><button class="nav-link" id="tab-forecast" onclick="switchTab('forecast')"><i class="fas fa-binoculars me-2"></i>สถานะพยากรณ์ (After PO)</button></li>
-            </ul>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3 align-items-center">
-                <div class="col-md-5"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหา (PO, Material, Desc)..." onkeyup="filterTable()"></div>
-                <div class="col-md-7 text-end">
-                    <span id="lastUpdate" class="text-muted small me-2">รอโหลด...</span>
-                    <button onclick="exportToExcel()" class="btn btn-outline-success btn-sm fw-bold"><i class="fas fa-file-excel"></i> Export Excel</button>
-                    <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+    <div id="restrictedSection">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header-dark d-flex justify-content-between align-items-end">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="tab-stockout" onclick="switchTab('stockout')">
+                            <i class="fas fa-exclamation-triangle me-2"></i> รายการของหมด
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="tab-doh" onclick="switchTab('doh')">
+                            <i class="fas fa-cubes me-2"></i> สถานะ DOH
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="tab-forecast" onclick="switchTab('forecast')">
+                            <i class="fas fa-binoculars me-2"></i> สถานะพยากรณ์
+                        </button>
+                    </li>
+                </ul>
+                <div class="pb-2">
+                    <button onclick="saveDailyStats()" class="btn btn-success btn-sm fw-bold shadow-sm"><i class="fas fa-save me-2"></i> บันทึกสถิติ</button>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle table-sm" id="dashTable" style="font-size: 0.95rem;">
-                    <thead class="table-dark text-center" id="tableHeader"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+            
+            <div class="card-body border rounded-bottom border-top-0">
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-5"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหา..." onkeyup="filterTable()"></div>
+                    <div class="col-md-7 text-end">
+                        <span id="lastUpdate" class="text-muted small me-2">...</span>
+                        <button onclick="exportToExcel()" class="btn btn-outline-success btn-sm fw-bold">Export Excel</button>
+                        <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger">รีเฟรช</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle table-sm" id="dashTable">
+                        <thead class="table-dark text-center" id="tableHeader"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+
+    <div id="loginPrompt" class="text-center py-5 bg-light border rounded mt-4">
+        <h5 class="text-muted mb-3"><i class="fas fa-lock me-2"></i> กรุณาเข้าสู่ระบบเพื่อดูข้อมูลตารางและใช้งานฟังก์ชันอื่นๆ</h5>
+        <button onclick="openLogin()" class="btn btn-primary px-4">เข้าสู่ระบบ</button>
+    </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDhROGmEtVLx9p202hfS44dOARYM7g-x_33tIcXU_olgrcrW6wVmcyLioa1J3l3nc_/exec'; // ⚠️ ใส่ URL Script ของคุณ
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
     
     Chart.register(ChartDataLabels);
+    let allClassAData = [], currentMode = 'stockout', dohSortOrder = 'asc', myChart = null, skuChart = null;
 
-    let allClassAData = []; 
-    let currentMode = 'stockout'; 
-    let dohSortOrder = 'asc'; 
-    let myChart = null;
-    let skuChart = null;
+    window.onload = function() {
+        checkAuth();
+        loadDashboardData();
+        loadHistoryChart();
+    };
 
-    window.onload = function() { loadDashboardData(); loadHistoryChart(); };
-    function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
-    function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
-    function switchTab(mode) { 
-        currentMode = mode; 
-        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + mode).classList.add('active');
-        if(mode === 'doh' || mode === 'forecast') dohSortOrder = 'asc';
-        renderTableWithMode();
+    function checkAuth() {
+        const user = localStorage.getItem('user');
+        if (user) {
+            document.getElementById('btnLogin').style.display = 'none';
+            document.getElementById('userMenu').style.display = 'block';
+            document.getElementById('userDisplay').innerText = user;
+            document.getElementById('restrictedSection').style.display = 'block';
+            document.getElementById('loginPrompt').style.display = 'none';
+        } else {
+            document.getElementById('btnLogin').style.display = 'block';
+            document.getElementById('userMenu').style.display = 'none';
+            document.getElementById('restrictedSection').style.display = 'none';
+            document.getElementById('loginPrompt').style.display = 'block';
+        }
     }
-    function toggleDohSort() {
-        if(currentMode !== 'doh' && currentMode !== 'forecast') return;
-        dohSortOrder = (dohSortOrder === 'asc') ? 'desc' : 'asc';
-        renderTableWithMode();
+
+    function openLogin() { document.getElementById('login-overlay').style.display = 'flex'; }
+    function closeLogin() { document.getElementById('login-overlay').style.display = 'none'; }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) });
+            const json = await res.json();
+            if (json.status === 'success') {
+                localStorage.setItem('user', json.username);
+                localStorage.setItem('role', json.role);
+                location.reload(); 
+            } else {
+                document.getElementById('loginError').innerText = json.message;
+            }
+        } catch(err) { alert("Error: " + err); }
     }
+
+    function logout() { if(confirm("ออกจากระบบ?")) { localStorage.clear(); location.reload(); } }
 
     async function loadDashboardData() {
-        showLoading();
+        document.getElementById('loadingOverlay').style.display = 'flex';
         try {
             const res = await fetch(SCRIPT_URL + '?action=dashboard&t=' + new Date().getTime());
             const json = await res.json();
-            if (json.status !== 'success') throw new Error(json.message);
+            if (json.status === 'success') {
+                const s = json.stats;
+                document.getElementById('statTotal').innerText = s.totalClassA;
+                document.getElementById('statZero').innerText = s.zeroStock;
+                document.getElementById('statPercent').innerText = ((s.zeroStock/s.totalClassA)*100).toFixed(2)+"%";
+                document.getElementById('statNonZeroPercent').innerText = (100 - ((s.zeroStock/s.totalClassA)*100)).toFixed(2)+"%";
+                document.getElementById('statDOH').innerText = Number(s.totalDOH).toFixed(2) + " วัน";
 
-            if (json.stats) {
-                // --- Current Stats ---
-                const total = json.stats.totalClassA;
-                const zero = json.stats.zeroStock;
-                const nonZero = total - zero;
-                const zeroPercent = total > 0 ? ((zero / total) * 100).toFixed(2) : 0;
-                const nonZeroPercent = total > 0 ? ((nonZero / total) * 100).toFixed(2) : 0;
-                const dohVal = parseFloat(json.stats.totalDOH || 0);
+                document.getElementById('fcTotal').innerText = s.totalClassA;
+                document.getElementById('fcZero').innerText = s.fcZeroStock;
+                document.getElementById('fcPercent').innerText = ((s.fcZeroStock/s.totalClassA)*100).toFixed(2)+"%";
+                document.getElementById('fcNonZeroPercent').innerText = (100 - ((s.fcZeroStock/s.totalClassA)*100)).toFixed(2)+"%";
+                document.getElementById('statFcDOH').innerText = Number(s.fcTotalDOH).toFixed(2) + " วัน";
 
-                document.getElementById('statTotal').innerText = total.toLocaleString();
-                document.getElementById('statZero').innerText = zero.toLocaleString();
-                document.getElementById('statPercent').innerText = zeroPercent + "%";
-                document.getElementById('statNonZeroPercent').innerText = nonZeroPercent + "%";
-                document.getElementById('statDOH').innerText = dohVal.toFixed(2) + " วัน";
-
-                // --- Forecast Stats ---
-                const fcZero = json.stats.fcZeroStock || 0;
-                const fcNonZero = total - fcZero;
-                const fcZeroPercent = total > 0 ? ((fcZero / total) * 100).toFixed(2) : 0;
-                const fcNonZeroPercent = total > 0 ? ((fcNonZero / total) * 100).toFixed(2) : 0;
-                const fcDohVal = parseFloat(json.stats.fcTotalDOH || 0);
-
-                // ตรวจสอบว่า Element มีอยู่จริงก่อนใส่ค่า (เพื่อป้องกัน Error)
-                if(document.getElementById('fcTotal')) document.getElementById('fcTotal').innerText = total.toLocaleString();
-                if(document.getElementById('fcZero')) document.getElementById('fcZero').innerText = fcZero.toLocaleString();
-                if(document.getElementById('fcPercent')) document.getElementById('fcPercent').innerText = fcZeroPercent + "%";
-                if(document.getElementById('fcNonZeroPercent')) document.getElementById('fcNonZeroPercent').innerText = fcNonZeroPercent + "%";
-                if(document.getElementById('statFcDOH')) document.getElementById('statFcDOH').innerText = fcDohVal.toFixed(2) + " วัน";
+                allClassAData = json.data;
+                const zeroStockItems = allClassAData.filter(r => parseFloat(r[5]) === 0);
+                renderSkuChart(zeroStockItems);
+                renderTableWithMode();
+                document.getElementById('lastUpdate').innerText = `Updated: ${new Date().toLocaleTimeString('th-TH')}`;
             }
-
-            allClassAData = json.data || []; 
-            const zeroStockItems = allClassAData.filter(r => parseFloat(r[5]) === 0);
-            renderSkuChart(zeroStockItems);
-            renderTableWithMode();
-            document.getElementById('lastUpdate').innerText = `Updated: ${new Date().toLocaleTimeString('th-TH')}`;
-        } catch (err) { alert("Error: " + err.message); }
-        finally { hideLoading(); }
+        } catch (err) { console.error(err); }
+        finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
 
     function renderTableWithMode() {
         const thead = document.getElementById('tableHeader');
         let displayData = [];
-        // [0:PO, 1:Plant, 2:Class, 3:Mat, 4:Desc, 5:Stock, 6:Unit, 7:Sale30, 8:DOH, 9:AvgSale, 10:Pending, 11:FcStock, 12:FcDOH]
-
         if (currentMode === 'stockout') {
             thead.innerHTML = `<tr><th>PO</th><th>Plant</th><th>Material</th><th>Description</th><th class="bg-danger text-white">Stock</th><th>Unit</th><th class="bg-warning text-dark">ยอดขาย 30 วัน</th></tr>`;
             displayData = allClassAData.filter(r => parseFloat(r[5]) === 0);
@@ -237,7 +318,7 @@
         const v = document.getElementById('searchInput').value.toLowerCase();
         const filtered = rows.filter(r => r.some(c => String(c).toLowerCase().includes(v)));
         let html = '';
-        if (filtered.length === 0) { html = '<tr><td colspan="100%" class="text-center py-5">✅ ไม่พบข้อมูล</td></tr>'; } 
+        if (filtered.length === 0) { html = '<tr><td colspan="100%" class="text-center py-5">ไม่พบข้อมูล</td></tr>'; } 
         else {
             filtered.forEach(row => {
                 let stock = Number(row[5]).toLocaleString();
@@ -254,10 +335,9 @@
                      let fcStock = Number(row[11]);
                      let fcDoh = row[12];
                      let pendingShow = pending > 0 ? `+${pending.toLocaleString()}` : "-";
-                     let pendingClass = pending > 0 ? "text-warning fw-bold" : "text-muted opacity-25";
                      let dohShow = (fcDoh > 9000) ? "∞" : Number(fcDoh).toFixed(2);
                      let dohClass = (fcDoh < 7) ? "text-danger fw-bold" : (fcDoh < 15) ? "text-warning fw-bold" : "text-success";
-                     html += `<td>${row[1]}</td><td>${row[3]} <small class="d-block text-muted text-truncate" style="max-width:150px;">${row[4]}</small></td><td>${stock}</td><td class="${pendingClass}">${pendingShow}</td><td class="fw-bold text-success">${fcStock.toLocaleString()}</td><td>${avgSale}</td><td class="${dohClass}">${dohShow}</td>`;
+                     html += `<td>${row[1]}</td><td>${row[3]} <small class="d-block text-muted text-truncate" style="max-width:150px;">${row[4]}</small></td><td>${stock}</td><td class="text-warning">${pendingShow}</td><td class="fw-bold text-success">${fcStock.toLocaleString()}</td><td>${avgSale}</td><td class="${dohClass}">${dohShow}</td>`;
                 }
                 html += '</tr>';
             });
@@ -266,24 +346,25 @@
     }
     
     function filterTable() { renderTableWithMode(); }
+    function switchTab(mode) { currentMode = mode; document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + mode).classList.add('active'); renderTableWithMode(); }
+    function toggleDohSort() { dohSortOrder = (dohSortOrder === 'asc') ? 'desc' : 'asc'; renderTableWithMode(); }
+
     function renderSkuChart(data) {
         const counts = {}; data.forEach(row => { const sku = row[4]; counts[sku] = (counts[sku] || 0) + 1; });
-        const labels = Object.keys(counts); const values = Object.values(counts);
         const ctx = document.getElementById('skuChart').getContext('2d');
         if (skuChart) skuChart.destroy();
-        skuChart = new Chart(ctx, { type: 'pie', data: { labels: labels, datasets: [{ data: values, backgroundColor: ['#e74c3c','#3498db','#f1c40f','#2ecc71','#9b59b6'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10 } }, datalabels: { color: '#fff', formatter: (v,c) => (v*100/c.chart.data.datasets[0].data.reduce((a,b)=>a+b,0) > 3)?v:"" } } } });
+        skuChart = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#e74c3c','#3498db','#f1c40f','#2ecc71'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10 } } } } });
     }
     async function loadHistoryChart() { try { const r = await fetch(SCRIPT_URL + '?action=history&t=' + new Date().getTime()); const j = await r.json(); 
         if(j.status==='success'){ const l=j.data.map(r=>new Date(r[0]).toLocaleDateString('th-TH',{day:'numeric',month:'short'})); const p=j.data.map(r=>parseFloat(r[3]));
         const ctx=document.getElementById('myChart').getContext('2d'); if(myChart) myChart.destroy();
-        myChart=new Chart(ctx,{type:'line',data:{labels:l,datasets:[{label:'% ของหมด',data:p,borderColor:'#e74c3c',backgroundColor:'rgba(231,76,60,0.1)',fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{display:true,align:'top',formatter:v=>v+'%'}}}});
+        myChart=new Chart(ctx,{type:'line',data:{labels:l,datasets:[{label:'% ของหมด',data:p,borderColor:'#e74c3c',fill:true,backgroundColor:'rgba(231,76,60,0.1)',tension:0.3}]},options:{responsive:true,maintainAspectRatio:false}});
     }} catch(e){}}
-    async function saveDailyStats() { if(!confirm("บันทึกสถิติ?"))return; showLoading(); try{await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:'save_daily'})}); alert("Saved"); loadHistoryChart();}catch(e){alert("Error");} finally{hideLoading();} }
+    async function saveDailyStats() { if(!confirm("บันทึกสถิติ?"))return; document.getElementById('loadingOverlay').style.display='flex'; try{await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:'save_daily'})}); alert("Saved");}catch(e){alert("Error");} finally{document.getElementById('loadingOverlay').style.display='none';} }
     function exportToExcel() { if (allClassAData.length===0){alert("No Data");return;} let data=[]; 
         if(currentMode==='forecast'){ data.push(["Plant","Material","Desc","Stock","Pending","FcStock","AvgSale","FcDOH"]); allClassAData.forEach(r=>data.push([r[1],r[3],r[4],r[5],r[10],r[11],r[9],r[12]])); }
         else{ data.push(["PO","Plant","Material","Stock","AvgSale","DOH"]); allClassAData.forEach(r=>data.push([r[0],r[1],r[3],r[5],r[9],r[8]])); }
         const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Export"); XLSX.writeFile(wb,"Data.xlsx"); }
 </script>
-
 </body>
 </html>
