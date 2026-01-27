@@ -155,9 +155,18 @@
     function showLoading(msg){ document.getElementById('loadingMessage').innerText=msg; document.getElementById('loadingOverlay').style.display='flex'; }
     function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
 
-    // --- API CALLER ---
+    // --- API HANDLER (ฉบับแก้ไข: ส่งชื่อ User ไปด้วย) ---
     async function callAPI(action, payload = {}) {
-        const bodyData = JSON.stringify({ action: action, ...payload });
+        // 1. ดึงชื่อ User ที่ Login แล้วออกมาจากเครื่อง
+        const user = localStorage.getItem('user') || 'Guest';
+        
+        // 2. รวมชื่อ User เข้าไปในข้อมูลที่จะส่ง
+        const bodyData = JSON.stringify({ 
+            action: action, 
+            username: user,  // <--- บรรทัดนี้สำคัญมาก! ถ้าไม่มีจะเป็น Guest
+            ...payload 
+        });
+
         try {
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -272,4 +281,5 @@
     }
 </script>
 </body>
+
 </html>
