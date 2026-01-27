@@ -9,24 +9,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script>
-        // Auth Guard: เช็ค Login
         if (!localStorage.getItem('user')) {
-            alert('กรุณาเข้าสู่ระบบผ่านหน้า Dashboard ก่อนใช้งานหน้านี้');
+            alert('กรุณา Login ผ่านหน้า Dashboard ก่อน');
             window.location.href = 'dashboard.html';
         }
     </script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; padding-top: 70px; }
-        
         .navbar-custom { background-color: #2c3e50; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .navbar-brand { color: white !important; font-weight: bold; }
         .nav-link { color: rgba(255,255,255,0.8) !important; transition: 0.3s; }
         .nav-link:hover { color: white !important; }
-        
         .main-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 30px; }
         .card-header { background: #2c3e50; color: white; padding: 15px 20px; }
-        
         .btn-big-upload { width: 100%; padding: 20px; font-size: 1.1rem; border-radius: 10px; transition: all 0.3s; border: none; display: flex; align-items: center; justify-content: flex-start; gap: 15px; text-align: left; }
         .btn-big-upload:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         
@@ -35,15 +31,12 @@
         .btn-bus { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: white; }
         .btn-calc { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
         .btn-clear { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
-        /* 🔥 ปุ่มหัวเชื้อ สีม่วง 🔥 */
         .btn-purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
+        /* 🔥 ปุ่มตั้งค่า (สีส้ม) 🔥 */
+        .btn-orange { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; }
         
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
-        
         .admin-only { display: none; }
-        #dataTable { font-size: 0.85rem; width: 100%; }
-        #dataTable th { background-color: #343a40; color: white; text-align: center; white-space: nowrap; }
-        #dataTable td { vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -74,7 +67,6 @@
     <div class="card main-card">
         <div class="card-header"><h5 class="m-0"><i class="fas fa-sliders-h me-2"></i>แผงควบคุมระบบ</h5></div>
         <div class="card-body">
-            <div id="uploadStatus" class="mb-3 text-center"></div>
             <input type="file" id="generalFileInput" accept=".csv,.xlsx,.xls" style="display:none">
             <input type="file" id="busFileInput" accept=".xlsx,.xls" style="display:none">
             
@@ -89,65 +81,64 @@
             
             <div class="admin-only row g-3">
                 <div class="col-12"><h6 class="text-muted mb-2 fw-bold">⚡ คำสั่งจัดการข้อมูล (Admin)</h6></div>
-                
-                <div class="col-md-4">
-                    <button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center">
-                        <i class="fas fa-calculator fa-lg me-2"></i> <strong>คำนวณ (Setup1)</strong>
-                    </button>
-                </div>
-                
-                <div class="col-md-4">
-                    <button onclick="runAdditive()" class="btn-big-upload btn-purple justify-content-center">
-                        <i class="fas fa-flask fa-lg me-2"></i> <strong>ปรับหัวเชื้อเป็นคราส A</strong>
-                    </button>
-                </div>
-
-                <div class="col-md-4">
-                    <button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center">
-                        <i class="fas fa-trash-alt fa-lg me-2"></i> <strong>เคลียร์ข้อมูลทั้งหมด</strong>
-                    </button>
-                </div>
+                <div class="col-md-3"><button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center"><i class="fas fa-calculator fa-lg me-2"></i> <strong>คำนวณ (Setup1)</strong></button></div>
+                <div class="col-md-3"><button onclick="runAdditive()" class="btn-big-upload btn-purple justify-content-center"><i class="fas fa-flask fa-lg me-2"></i> <strong>ปรับหัวเชื้อ (Class A)</strong></button></div>
+                <div class="col-md-3"><button onclick="openSettings()" class="btn-big-upload btn-orange justify-content-center"><i class="fas fa-cog fa-lg me-2"></i> <strong>ตั้งค่าการคำนวณ</strong></button></div>
+                <div class="col-md-3"><button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center"><i class="fas fa-trash-alt fa-lg me-2"></i> <strong>เคลียร์ข้อมูล</strong></button></div>
             </div>
         </div>
     </div>
 
     <div class="card main-card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="m-0"><i class="fas fa-boxes me-2"></i>รายการจัดส่งสินค้า (Template)</h5>
+            <h5 class="m-0"><i class="fas fa-boxes me-2"></i>รายการสินค้า (Template)</h5>
             <button onclick="exportData()" class="btn btn-success btn-sm fw-bold"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
         </div>
         <div class="card-body">
-            <div class="mb-3"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาข้อมูลในตาราง..." onkeyup="filterTable()"></div>
+            <div class="mb-3"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาข้อมูล..." onkeyup="filterTable()"></div>
             <div class="table-responsive">
-                <table class="table table-hover table-bordered" id="dataTable">
-                    <thead id="tableHead"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+                <table class="table table-hover table-bordered" id="dataTable"><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title"><i class="fas fa-sliders-h me-2"></i>ตั้งค่าการคำนวณ</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="settingsForm">
+            <div id="settingsContainer" class="d-flex flex-column gap-3">
+                <div class="text-center text-muted">กำลังโหลดข้อมูล...</div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+        <button type="button" onclick="saveSettingsForm()" class="btn btn-success">บันทึก</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // 🔴🔴🔴 URL API ของคุณ 🔴🔴🔴
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
-    
-    // Global Vars
     const generalFileInput = document.getElementById('generalFileInput');
     const busFileInput = document.getElementById('busFileInput');
-    let targetSheetName = ''; 
-    let allData = [];
+    let targetSheetName = ''; let allData = [];
+    let settingsModal = null; 
 
     window.onload = function() {
         document.getElementById('userDisplay').innerText = localStorage.getItem('user');
-        if (localStorage.getItem('role') === 'admin') {
-            document.querySelector('.admin-only').style.display = 'flex';
-        } else {
-            document.querySelector('.admin-only').style.display = 'none';
-        }
+        if (localStorage.getItem('role') === 'admin') document.querySelector('.admin-only').style.display = 'flex';
+        settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
         loadData();
     };
 
@@ -155,7 +146,6 @@
     function showLoading(msg){ document.getElementById('loadingMessage').innerText=msg; document.getElementById('loadingOverlay').style.display='flex'; }
     function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
 
-    // --- API CALLER (With Username for Logging) ---
     async function callAPI(action, payload = {}) {
         const user = localStorage.getItem('user') || 'Guest';
         try {
@@ -165,12 +155,9 @@
                 body: JSON.stringify({ action: action, username: user, ...payload })
             });
             return await response.json();
-        } catch (e) {
-            alert("Error: " + e); return null;
-        }
+        } catch (e) { alert("Error: " + e); return null; }
     }
 
-    // --- UPLOAD LOGIC ---
     function triggerGeneralUpload(name){ targetSheetName=name; generalFileInput.value=''; generalFileInput.click(); }
     generalFileInput.onchange = function(){ if(this.files.length) handleUpload(this.files[0], false); };
     function triggerBusUpload(){ busFileInput.value=''; busFileInput.click(); }
@@ -193,64 +180,63 @@
             }
             const res = await callAPI('upload', { sheetName: targetSheetName, fileContent: content });
             hideLoading();
-            if(res && res.status === 'success') alert(res.message);
-            else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
+            if(res && res.status === 'success') alert(res.message); else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
         };
         if(file.name.match(/\.(xlsx|xls)$/)) reader.readAsBinaryString(file); else reader.readAsText(file);
     }
 
-    // --- BUTTON ACTIONS ---
-    async function runCalculate(){ 
-        if(confirm("ยืนยันการคำนวณ (Setup1)?")){ showLoading("กำลังคำนวณ..."); const res = await callAPI('run_calculate'); hideLoading();
-            if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } 
-    }
-    
-    // 🔥 ฟังก์ชันใหม่สำหรับปุ่มหัวเชื้อ 🔥
-    async function runAdditive(){ 
-        if(confirm("ยืนยันการปรับหัวเชื้อเป็น Class A?")){ 
-            showLoading("กำลังดำเนินการ..."); 
-            const res = await callAPI('run_additive'); 
-            hideLoading();
-            if(res && res.status === 'success') { alert(res.message); } 
-            else alert("Error: " + (res ? res.message : "Unknown")); 
-        } 
-    }
+    async function runCalculate(){ if(confirm("ยืนยันการคำนวณ (Setup1)?")){ showLoading("กำลังคำนวณ..."); const res = await callAPI('run_calculate'); hideLoading(); if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } }
+    async function runAdditive(){ if(confirm("ยืนยันการปรับหัวเชื้อเป็น Class A?")){ showLoading("กำลังดำเนินการ..."); const res = await callAPI('run_additive'); hideLoading(); if(res && res.status === 'success') { alert(res.message); } else alert("Error: " + (res ? res.message : "Unknown")); } }
+    async function runClearData(){ if(confirm("⚠️ เตือน: ข้อมูลทั้งหมดจะถูกลบ!\nยืนยันการเคลียร์ข้อมูล?")){ showLoading("กำลังล้างข้อมูล..."); const res = await callAPI('run_clear'); hideLoading(); if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } }
 
-    async function runClearData(){ 
-        if(confirm("⚠️ เตือน: ข้อมูลทั้งหมดจะถูกลบ!\nยืนยันการเคลียร์ข้อมูล?")){ showLoading("กำลังล้างข้อมูล..."); const res = await callAPI('run_clear'); hideLoading();
-            if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } 
-    }
-
-    // --- TABLE LOGIC ---
-    async function loadData(){
-        const res = await callAPI('view');
-        if(res && res.status==='success' && res.data.length){
-            allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))];
-            renderTable(allData);
+    // 🔥 SETTINGS LOGIC 🔥
+    async function openSettings() {
+        settingsModal.show();
+        const container = document.getElementById('settingsContainer');
+        container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><div class="mt-2">โหลดข้อมูล...</div></div>';
+        
+        const res = await callAPI('get_settings');
+        container.innerHTML = '';
+        
+        if (res && res.status === 'success' && res.data.length > 0) {
+            res.data.forEach((row, index) => {
+                // row[0]=Name, row[1]=Value, row[2]=Unit, row[3]=Desc
+                const div = document.createElement('div');
+                div.className = 'mb-3 border-bottom pb-2';
+                div.innerHTML = `
+                    <label class="fw-bold text-dark">${row[0] || 'หัวข้อ'}</label>
+                    <div class="input-group my-1">
+                        <input type="text" class="form-control setting-input fw-bold text-primary" 
+                               data-row="${index + 2}" value="${row[1] || ''}">
+                        <span class="input-group-text bg-light">${row[2] || ''}</span>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i>${row[3] || '-'}</small>
+                `;
+                container.appendChild(div);
+            });
+        } else {
+            container.innerHTML = '<div class="text-center text-danger">ไม่พบข้อมูล หรือ ชีท setting ว่างเปล่า</div>';
         }
+    }
+
+    async function saveSettingsForm() {
+        if(!confirm("ยืนยันบันทึกการตั้งค่า?")) return;
+        const inputs = document.querySelectorAll('.setting-input');
+        const settingsData = [];
+        inputs.forEach(input => {
+            settingsData.push({ rowIndex: parseInt(input.getAttribute('data-row')), value: input.value });
+        });
+        showLoading("กำลังบันทึก...");
+        const res = await callAPI('save_settings', { settings: settingsData });
         hideLoading();
+        if (res && res.status === 'success') { alert(res.message); settingsModal.hide(); } 
+        else { alert("Error: " + (res ? res.message : "Unknown")); }
     }
-    function renderTable(data){
-        const table = document.getElementById('dataTable');
-        let htmlHead = '<tr>'; data[0].forEach(h=>htmlHead+=`<th>${h}</th>`); htmlHead+='</tr>';
-        document.getElementById('tableHead').innerHTML = htmlHead;
-        let htmlBody = '';
-        data.slice(1).forEach(row=>{ htmlBody+='<tr>'; row.forEach(c=>htmlBody+=`<td>${c}</td>`); htmlBody+='</tr>'; });
-        document.getElementById('tableBody').innerHTML = htmlBody;
-    }
-    function filterTable(){
-        const v = document.getElementById('searchInput').value.toLowerCase();
-        const f = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v)));
-        renderTable([allData[0], ...f]);
-    }
-    async function exportData() {
-        showLoading("กำลัง Export...");
-        const res = await callAPI('export');
-        hideLoading();
-        if (res && res.status === 'success') {
-            const ws=XLSX.utils.aoa_to_sheet(res.data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Data"); XLSX.writeFile(wb,"Full_Template_Data.xlsx");
-        } else { alert('Export Error: ' + (res ? res.message : "Unknown")); }
-    }
+
+    async function loadData(){ const res = await callAPI('view'); if(res && res.status==='success' && res.data.length){ allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))]; renderTable(allData); } hideLoading(); }
+    function renderTable(data){ const table = document.getElementById('dataTable'); let htmlHead = '<tr>'; data[0].forEach(h=>htmlHead+=`<th>${h}</th>`); htmlHead+='</tr>'; document.getElementById('tableHead').innerHTML = htmlHead; let htmlBody = ''; data.slice(1).forEach(row=>{ htmlBody+='<tr>'; row.forEach(c=>htmlBody+=`<td>${c}</td>`); htmlBody+='</tr>'; }); document.getElementById('tableBody').innerHTML = htmlBody; }
+    function filterTable(){ const v = document.getElementById('searchInput').value.toLowerCase(); const f = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v))); renderTable([allData[0], ...f]); }
+    async function exportData() { showLoading("กำลัง Export..."); const res = await callAPI('export'); hideLoading(); if (res && res.status === 'success') { const ws=XLSX.utils.aoa_to_sheet(res.data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Data"); XLSX.writeFile(wb,"Full_Template_Data.xlsx"); } else { alert('Export Error: ' + (res ? res.message : "Unknown")); } }
 </script>
 </body>
 </html>
