@@ -117,7 +117,21 @@
 <script>
     // ⚠️ แก้ URL ให้เป็น Deployment ล่าสุด ⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
-    
+    // --- ฟังก์ชันสำหรับยิง API และส่งชื่อ User ไปด้วย (แปะโค้ดนี้ไว้ทุกหน้า) ---
+    async function callAPI(action, payload = {}) {
+        const user = localStorage.getItem('user') || 'Guest';
+        try {
+            const res = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: action, username: user, ...payload })
+            });
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
     let allData = [];
 
     window.onload = loadData;
@@ -312,4 +326,5 @@
 </script>
 
 </body>
+
 </html>
