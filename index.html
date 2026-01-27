@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script>
-        // Auth Guard
         if (!localStorage.getItem('user')) {
             alert('กรุณา Login ผ่านหน้า Dashboard ก่อน');
             window.location.href = 'dashboard.html';
@@ -22,25 +21,19 @@
         .navbar-brand { color: white !important; font-weight: bold; }
         .nav-link { color: rgba(255,255,255,0.8) !important; transition: 0.3s; }
         .nav-link:hover { color: white !important; }
-        
         .main-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 30px; }
         .card-header { background: #2c3e50; color: white; padding: 15px 20px; }
-        
         .btn-big-upload { width: 100%; padding: 20px; font-size: 1.1rem; border-radius: 10px; transition: all 0.3s; border: none; display: flex; align-items: center; justify-content: flex-start; gap: 15px; text-align: left; }
         .btn-big-upload:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        
         .btn-me2n { background: linear-gradient(135deg, #1c4587 0%, #0d2a58 100%); color: white; }
         .btn-powerbi { background: linear-gradient(135deg, #f1c232 0%, #d4a017 100%); color: #212529; }
         .btn-bus { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: white; }
         .btn-calc { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
         .btn-clear { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
         .btn-purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
-        
-        /* 🔥 ปุ่มตั้งค่า (สีส้ม) */
         .btn-orange { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; }
-        
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
-        .admin-only { display: none; } /* ซ่อนแถว Admin โดย Default */
+        .admin-only { display: none; }
     </style>
 </head>
 <body>
@@ -77,8 +70,8 @@
         </div>
         
         <div class="card-body">
-            <input type="file" id="generalFileInput" accept=".csv,.xlsx,.xls" style="display:none">
-            <input type="file" id="busFileInput" accept=".xlsx,.xls" style="display:none">
+            <input type="file" id="generalFileInput" accept=".csv, .xlsx, .xls" style="display:none">
+            <input type="file" id="busFileInput" accept=".xlsx, .xls" style="display:none">
             
             <h6 class="text-muted mb-3 fw-bold">📥 ส่วนนำเข้าข้อมูล</h6>
             <div class="row g-3 mb-4">
@@ -91,21 +84,9 @@
             
             <div class="admin-only row g-3">
                 <div class="col-12"><h6 class="text-muted mb-2 fw-bold">⚡ คำสั่งจัดการข้อมูล (Admin)</h6></div>
-                <div class="col-md-4">
-                    <button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center">
-                        <i class="fas fa-calculator fa-lg me-2"></i> <strong>คำนวณ (Setup1)</strong>
-                    </button>
-                </div>
-                <div class="col-md-4">
-                    <button onclick="runAdditive()" class="btn-big-upload btn-purple justify-content-center">
-                        <i class="fas fa-flask fa-lg me-2"></i> <strong>ปรับหัวเชื้อ (Class A)</strong>
-                    </button>
-                </div>
-                <div class="col-md-4">
-                    <button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center">
-                        <i class="fas fa-trash-alt fa-lg me-2"></i> <strong>เคลียร์ข้อมูลทั้งหมด</strong>
-                    </button>
-                </div>
+                <div class="col-md-4"><button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center"><i class="fas fa-calculator fa-lg me-2"></i> <strong>คำนวณ (Setup1)</strong></button></div>
+                <div class="col-md-4"><button onclick="runAdditive()" class="btn-big-upload btn-purple justify-content-center"><i class="fas fa-flask fa-lg me-2"></i> <strong>ปรับหัวเชื้อ (Class A)</strong></button></div>
+                <div class="col-md-4"><button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center"><i class="fas fa-trash-alt fa-lg me-2"></i> <strong>เคลียร์ข้อมูลทั้งหมด</strong></button></div>
             </div>
         </div>
     </div>
@@ -159,10 +140,9 @@
     window.onload = function() {
         document.getElementById('userDisplay').innerText = localStorage.getItem('user');
         
-        // 🔥 ถ้าเป็น Admin ให้โชว์ปุ่มตั้งค่า (Header) และปุ่มคำสั่ง (Row)
         if (localStorage.getItem('role') === 'admin') {
-            document.querySelector('.admin-only').style.display = 'flex'; // แถวปุ่ม Admin
-            document.getElementById('btnSettings').style.display = 'block'; // ปุ่มตั้งค่าบน Header
+            document.querySelector('.admin-only').style.display = 'flex';
+            document.getElementById('btnSettings').style.display = 'block';
         }
         
         settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
@@ -190,44 +170,74 @@
     function triggerBusUpload(){ busFileInput.value=''; busFileInput.click(); }
     busFileInput.onchange = function(){ if(this.files.length) handleUpload(this.files[0], true); };
 
+    // 🔥🔥🔥 ฟังก์ชันอัปโหลดที่แก้แล้ว (รองรับ Excel -> CSV) 🔥🔥🔥
     async function handleUpload(file, isBus) {
         if(!confirm(`ยืนยันอัปโหลดไฟล์: ${file.name}?`)) return;
-        showLoading("กำลังอัปโหลด...");
+        showLoading("กำลังประมวลผลไฟล์...");
+        
         const reader = new FileReader();
+        
+        // ฟังก์ชันเมื่ออ่านไฟล์เสร็จ
         reader.onload = async function(e) {
             let content = e.target.result;
+            
+            // 1. ถ้าเป็นไฟล์ Excel (.xlsx, .xls) -> แปลงเป็น CSV ก่อนส่ง
             if(file.name.match(/\.(xlsx|xls)$/)) {
-                const workbook = XLSX.read(content, {type: 'binary'});
-                if(isBus) {
-                    await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว1', fileContent: XLSX.utils.sheet_to_csv(workbook.Sheets["1"]) });
-                    await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว2', fileContent: XLSX.utils.sheet_to_csv(workbook.Sheets["2"]) });
-                    hideLoading(); alert("✅ อัปโหลดไฟล์เดินรถเรียบร้อย"); return;
+                try {
+                    // อ่าน Binary Data ด้วย SheetJS
+                    const workbook = XLSX.read(content, {type: 'binary'});
+                    
+                    if (isBus) {
+                        // กรณีไฟล์เดินรถ (มี 2 ชีท)
+                        const sheet1 = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+                        const sheet2 = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[1]]); // ชีทที่ 2
+                        
+                        await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว1', fileContent: sheet1 });
+                        await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว2', fileContent: sheet2 });
+                        hideLoading(); 
+                        alert("✅ อัปโหลดไฟล์เดินรถเรียบร้อย"); 
+                        return;
+                    } else {
+                        // กรณีไฟล์ทั่วไป (ME2N / POWER_BI) -> เอาชีทแรก
+                        content = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+                    }
+                } catch (err) {
+                    hideLoading();
+                    alert("Excel Convert Error: " + err);
+                    return;
                 }
-                content = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
             }
+            
+            // 2. ส่งข้อมูล (ที่เป็น CSV แล้ว) ไปที่ Backend
             const res = await callAPI('upload', { sheetName: targetSheetName, fileContent: content });
             hideLoading();
-            if(res && res.status === 'success') alert(res.message); else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
+            
+            if(res && res.status === 'success') alert(res.message); 
+            else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
         };
-        if(file.name.match(/\.(xlsx|xls)$/)) reader.readAsBinaryString(file); else reader.readAsText(file);
+
+        // ตรวจสอบประเภทไฟล์เพื่อเลือกวิธีอ่าน
+        if(file.name.match(/\.(xlsx|xls)$/)) {
+            reader.readAsBinaryString(file); // ถ้าเป็น Excel ให้อ่านแบบ Binary
+        } else {
+            reader.readAsText(file); // ถ้าเป็น CSV ให้อ่านแบบ Text ปกติ
+        }
     }
 
+    // --- BUTTON ACTIONS ---
     async function runCalculate(){ if(confirm("ยืนยันการคำนวณ (Setup1)?")){ showLoading("กำลังคำนวณ..."); const res = await callAPI('run_calculate'); hideLoading(); if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } }
     async function runAdditive(){ if(confirm("ยืนยันการปรับหัวเชื้อเป็น Class A?")){ showLoading("กำลังดำเนินการ..."); const res = await callAPI('run_additive'); hideLoading(); if(res && res.status === 'success') { alert(res.message); } else alert("Error: " + (res ? res.message : "Unknown")); } }
     async function runClearData(){ if(confirm("⚠️ เตือน: ข้อมูลทั้งหมดจะถูกลบ!\nยืนยันการเคลียร์ข้อมูล?")){ showLoading("กำลังล้างข้อมูล..."); const res = await callAPI('run_clear'); hideLoading(); if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } }
 
-    // SETTINGS LOGIC
+    // --- SETTINGS LOGIC ---
     async function openSettings() {
         settingsModal.show();
         const container = document.getElementById('settingsContainer');
         container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><div class="mt-2">โหลดข้อมูล...</div></div>';
-        
         const res = await callAPI('get_settings');
         container.innerHTML = '';
-        
         if (res && res.status === 'success' && res.data.length > 0) {
             res.data.forEach((row, index) => {
-                // row[0]=Name, row[1]=Value, row[2]=Unit, row[3]=Desc
                 const div = document.createElement('div');
                 div.className = 'mb-3 border-bottom pb-2';
                 div.innerHTML = `
@@ -241,23 +251,18 @@
                 `;
                 container.appendChild(div);
             });
-        } else {
-            container.innerHTML = '<div class="text-center text-danger">ไม่พบข้อมูล หรือ ชีท setting ว่างเปล่า</div>';
-        }
+        } else { container.innerHTML = '<div class="text-center text-danger">ไม่พบข้อมูล หรือ ชีท setting ว่างเปล่า</div>'; }
     }
 
     async function saveSettingsForm() {
         if(!confirm("ยืนยันบันทึกการตั้งค่า?")) return;
         const inputs = document.querySelectorAll('.setting-input');
         const settingsData = [];
-        inputs.forEach(input => {
-            settingsData.push({ rowIndex: parseInt(input.getAttribute('data-row')), value: input.value });
-        });
+        inputs.forEach(input => { settingsData.push({ rowIndex: parseInt(input.getAttribute('data-row')), value: input.value }); });
         showLoading("กำลังบันทึก...");
         const res = await callAPI('save_settings', { settings: settingsData });
         hideLoading();
-        if (res && res.status === 'success') { alert(res.message); settingsModal.hide(); } 
-        else { alert("Error: " + (res ? res.message : "Unknown")); }
+        if (res && res.status === 'success') { alert(res.message); settingsModal.hide(); } else { alert("Error: " + (res ? res.message : "Unknown")); }
     }
 
     async function loadData(){ const res = await callAPI('view'); if(res && res.status==='success' && res.data.length){ allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))]; renderTable(allData); } hideLoading(); }
