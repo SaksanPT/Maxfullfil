@@ -11,14 +11,11 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; padding-top: 70px; }
         
-        /* 🔥 แก้ไข 1: เปลี่ยนสี Navbar เป็นสีแดงเข้ม (#d32f2f) ตามหน้าอื่นๆ 🔥 */
         .navbar-custom { background-color: #2c3e50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
         .navbar-brand { color: white !important; font-weight: bold; }
         .nav-link { color: rgba(255,255,255,0.9) !important; cursor: pointer; }
         .nav-link:hover { color: white !important; }
 
-        /* Login Overlay */
         #login-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); z-index: 9999; 
@@ -26,7 +23,6 @@
         }
         .login-card { background: white; padding: 30px; border-radius: 15px; width: 350px; text-align: center; }
 
-        /* Stats Cards */
         .stat-card { background: white; border-radius: 12px; padding: 15px; text-align: center; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
         .stat-number { font-size: 1.8rem; font-weight: bold; }
         .border-blue { border-left-color: #3498db; } .text-blue { color: #3498db; }
@@ -40,43 +36,19 @@
         .border-info { border-left-color: #17a2b8; } .text-info { color: #17a2b8; }
         .border-purple { border-left-color: #9b59b6; } .text-purple { color: #9b59b6; }
 
-        /* Loading */
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        
-        /* Restricted Area */
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; }
         #restrictedSection { display: none; }
 
-        /* 🔥 แก้ไข 2: ปรับแต่ง Tabs ให้เมื่อเลือกแล้วตัวอักษรเป็นสีแดงเข้ม (อ่านออก) 🔥 */
         .card-header-dark {
-            background-color: #2c3e50; /* สีพื้นหลังหัวตารางเป็นสีน้ำเงินเข้ม (Contrast กับ Tab สีขาว) */
-            color: white;
-            padding: 15px 20px 0 20px;
-            border-radius: 12px 12px 0 0;
+            background-color: #2c3e50; color: white; padding: 15px 20px 0 20px; border-radius: 12px 12px 0 0;
         }
-
         .nav-tabs { border-bottom: none; }
-        
-        /* สไตล์ปุ่ม Tab ปกติ (ยังไม่เลือก) */
         .nav-tabs .nav-link {
-            color: rgba(255, 255, 255, 0.6); /* สีตัวอักษรจางๆ */
-            font-weight: bold;
-            border: none;
-            margin-right: 5px;
-            border-radius: 8px 8px 0 0;
-            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.6); font-weight: bold; border: none; margin-right: 5px; border-radius: 8px 8px 0 0; transition: all 0.2s ease;
         }
-        
-        .nav-tabs .nav-link:hover {
-            color: white;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* สไตล์ปุ่ม Tab เมื่อถูกเลือก (Active) -> เปลี่ยนตัวหนังสือเป็นสีแดงเข้ม */
+        .nav-tabs .nav-link:hover { color: white; background-color: rgba(255, 255, 255, 0.1); }
         .nav-tabs .nav-link.active {
-            background-color: blue; /* พื้นหลังสีขาว */
-            color: #d32f2f; /* 🔥 ตัวหนังสือสีแดงเข้ม (อ่านชัดเจนบนพื้นขาว) 🔥 */
-            border-bottom: none;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* เพิ่มเงาเล็กน้อยให้ดูนูน */
+            background-color: white; color: #d32f2f; border-bottom: none; box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -93,9 +65,8 @@
         <form onsubmit="handleLogin(event)">
             <input type="text" id="username" class="form-control mb-2" placeholder="Username" required>
             <input type="password" id="password" class="form-control mb-3" placeholder="Password" required>
-            <button type="submit" class="btn btn-danger w-100 fw-bold">Login</button>
+            <button type="submit" id="btnLoginSubmit" class="btn btn-danger w-100 fw-bold">Login</button>
         </form>
-        <button onclick="closeLogin()" class="btn btn-link text-secondary mt-2 btn-sm">ปิดหน้าต่าง (ดู Dashboard)</button>
         <div id="loginError" class="text-danger mt-2 small"></div>
     </div>
 </div>
@@ -106,12 +77,12 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item"><a class="nav-link" href="index.html">หน้าจัดการ (Index)</a></li>
+                <li class="nav-item"><a class="nav-link" href="index.html">หน้าจัดการ</a></li>
                 <li class="nav-item"><a class="nav-link" href="oil_order.html">สั่งน้ำมัน</a></li>
                 <li class="nav-item"><a class="nav-link" href="delivery_stats.html">รอบจัดส่ง</a></li>
                 <li class="nav-item"><a class="nav-link" href="po_pending.html">ค้างรับ</a></li>
                 <li class="nav-item ms-3">
-                    <button id="btnLogin" onclick="openLogin()" class="btn btn-light btn-sm fw-bold text-danger">Login</button>
+                    <button id="btnLoginBtn" onclick="openLogin()" class="btn btn-light btn-sm fw-bold text-danger">Login</button>
                     <div id="userMenu" style="display:none;">
                         <span class="text-white me-2" id="userDisplay">User</span>
                         <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
@@ -127,17 +98,17 @@
     <h5 class="text-muted mb-3"><i class="fas fa-thumbtack me-2"></i>สถานะปัจจุบัน (Today)</h5>
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3"><div class="stat-card border-blue"><div class="stat-number text-blue" id="statTotal">-</div><small>Class A ทั้งหมด</small></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-red"><div class="stat-number text-red" id="statZero">-</div><small>ของหมด (J=0)</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-red"><div class="stat-number text-red" id="statZero">-</div><small>ของหมด (0)</small></div></div>
         <div class="col-6 col-md-3"><div class="stat-card border-orange"><div class="stat-number text-orange" id="statPercent">-%</div><small>สัดส่วนของหมด</small></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-green"><div class="stat-number text-green" id="statNonZeroPercent">-%</div><small>มีสินค้า (J≠0)</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-green"><div class="stat-number text-green" id="statNonZeroPercent">-%</div><small>มีสินค้า</small></div></div>
     </div>
 
-    <h5 class="text-muted mb-3"><i class="fas fa-magic me-2"></i>สถานะพยากรณ์ (หลังจากรับของ ME2N)</h5>
+    <h5 class="text-muted mb-3"><i class="fas fa-magic me-2"></i>สถานะพยากรณ์</h5>
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3"><div class="stat-card border-fc-total"><div class="stat-number text-fc-total" id="fcTotal">-</div><small>Class A ทั้งหมด</small></div></div>
         <div class="col-6 col-md-3"><div class="stat-card border-fc-red"><div class="stat-number text-fc-red" id="fcZero">-</div><small>คาดว่าของหมด</small></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-orange"><div class="stat-number text-fc-orange" id="fcPercent">-%</div><small>อัตราส่วน (พยากรณ์)</small></div></div>
-        <div class="col-6 col-md-3"><div class="stat-card border-fc-green"><div class="stat-number text-fc-green" id="fcNonZeroPercent">-%</div><small>มีสินค้า (พยากรณ์)</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-orange"><div class="stat-number text-fc-orange" id="fcPercent">-%</div><small>อัตราส่วน</small></div></div>
+        <div class="col-6 col-md-3"><div class="stat-card border-fc-green"><div class="stat-number text-fc-green" id="fcNonZeroPercent">-%</div><small>มีสินค้า</small></div></div>
     </div>
 
     <div class="row mb-4">
@@ -164,21 +135,9 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header-dark d-flex justify-content-between align-items-end">
                 <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="tab-stockout" onclick="switchTab('stockout')">
-                            <i class="fas fa-exclamation-triangle me-2"></i> รายการของหมด
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tab-doh" onclick="switchTab('doh')">
-                            <i class="fas fa-cubes me-2"></i> สถานะ DOH
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tab-forecast" onclick="switchTab('forecast')">
-                            <i class="fas fa-binoculars me-2"></i> สถานะพยากรณ์
-                        </button>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active" id="tab-stockout" onclick="switchTab('stockout')"><i class="fas fa-exclamation-triangle me-2"></i> ของหมด</button></li>
+                    <li class="nav-item"><button class="nav-link" id="tab-doh" onclick="switchTab('doh')"><i class="fas fa-cubes me-2"></i> DOH</button></li>
+                    <li class="nav-item"><button class="nav-link" id="tab-forecast" onclick="switchTab('forecast')"><i class="fas fa-binoculars me-2"></i> Forecast</button></li>
                 </ul>
                 <div class="pb-2">
                     <button onclick="saveDailyStats()" class="btn btn-success btn-sm fw-bold shadow-sm"><i class="fas fa-save me-2"></i> บันทึกสถิติ</button>
@@ -186,26 +145,35 @@
             </div>
             
             <div class="card-body border rounded-bottom border-top-0">
-                <div class="row mb-3 align-items-center">
-                    <div class="col-md-5"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหา..." onkeyup="filterTable()"></div>
-                    <div class="col-md-7 text-end">
-                        <span id="lastUpdate" class="text-muted small me-2">...</span>
-                        <button onclick="exportToExcel()" class="btn btn-outline-success btn-sm fw-bold">Export Excel</button>
-                        <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger">รีเฟรช</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div style="width: 40%;">
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหา..." onkeyup="filterTable()">
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <span id="pageInfo" class="fw-bold small mx-2">หน้า 1</span>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+                        
+                        <div class="d-inline-block ms-3 border-start ps-3">
+                            <button onclick="exportToExcel()" class="btn btn-outline-success btn-sm fw-bold">Export</button>
+                            <button onclick="loadDashboardData()" class="btn btn-light btn-sm fw-bold text-danger ms-1">รีเฟรช</button>
+                        </div>
                     </div>
                 </div>
+
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle table-sm" id="dashTable">
                         <thead class="table-dark text-center" id="tableHeader"></thead>
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
+                <div class="text-end text-muted small mt-2" id="lastUpdate"></div>
             </div>
         </div>
     </div>
 
     <div id="loginPrompt" class="text-center py-5 bg-light border rounded mt-4">
-        <h5 class="text-muted mb-3"><i class="fas fa-lock me-2"></i> กรุณาเข้าสู่ระบบเพื่อดูข้อมูลตารางและใช้งานฟังก์ชันอื่นๆ</h5>
+        <h5 class="text-muted mb-3"><i class="fas fa-lock me-2"></i> กรุณาเข้าสู่ระบบเพื่อดูข้อมูล</h5>
         <button onclick="openLogin()" class="btn btn-primary px-4">เข้าสู่ระบบ</button>
     </div>
 
@@ -220,48 +188,49 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
     
     Chart.register(ChartDataLabels);
-    let allClassAData = [], currentMode = 'stockout', dohSortOrder = 'asc', myChart = null, skuChart = null;
+    let allClassAData = [], filteredData = [], currentMode = 'stockout', dohSortOrder = 'asc', myChart = null, skuChart = null;
+    let currentPage = 1;
+    const rowsPerPage = 50; 
 
-    window.onload = function() {
-        checkAuth();
-        loadDashboardData();
-        loadHistoryChart();
-    };
+    window.onload = function() { checkAuthAndLoad(); };
 
-    function checkAuth() {
+    function checkAuthAndLoad() {
         const user = localStorage.getItem('user');
         if (user) {
-            document.getElementById('btnLogin').style.display = 'none';
+            document.getElementById('btnLoginBtn').style.display = 'none';
             document.getElementById('userMenu').style.display = 'block';
             document.getElementById('userDisplay').innerText = user;
             document.getElementById('restrictedSection').style.display = 'block';
             document.getElementById('loginPrompt').style.display = 'none';
+            document.getElementById('login-overlay').style.display = 'none';
+            loadDashboardData();
+            loadHistoryChart();
         } else {
-            document.getElementById('btnLogin').style.display = 'block';
+            document.getElementById('btnLoginBtn').style.display = 'block';
             document.getElementById('userMenu').style.display = 'none';
             document.getElementById('restrictedSection').style.display = 'none';
             document.getElementById('loginPrompt').style.display = 'block';
+            document.getElementById('login-overlay').style.display = 'flex';
         }
     }
 
     function openLogin() { document.getElementById('login-overlay').style.display = 'flex'; }
-    function closeLogin() { document.getElementById('login-overlay').style.display = 'none'; }
-
+    
     async function handleLogin(e) {
         e.preventDefault();
+        const btn = document.getElementById('btnLoginSubmit');
         const u = document.getElementById('username').value;
         const p = document.getElementById('password').value;
+        btn.innerHTML = '<div class="spinner-border spinner-border-sm"></div>'; btn.disabled = true;
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: u, password: p }) });
             const json = await res.json();
             if (json.status === 'success') {
                 localStorage.setItem('user', json.username);
                 localStorage.setItem('role', json.role);
-                location.reload(); 
-            } else {
-                document.getElementById('loginError').innerText = json.message;
-            }
-        } catch(err) { alert("Error: " + err); }
+                checkAuthAndLoad();
+            } else { document.getElementById('loginError').innerText = json.message; }
+        } catch(err) { alert("Error: " + err); } finally { btn.innerHTML = 'Login'; btn.disabled = false; }
     }
 
     function logout() { if(confirm("ออกจากระบบ?")) { localStorage.clear(); location.reload(); } }
@@ -278,7 +247,6 @@
                 document.getElementById('statPercent').innerText = ((s.zeroStock/s.totalClassA)*100).toFixed(2)+"%";
                 document.getElementById('statNonZeroPercent').innerText = (100 - ((s.zeroStock/s.totalClassA)*100)).toFixed(2)+"%";
                 document.getElementById('statDOH').innerText = Number(s.totalDOH).toFixed(2) + " วัน";
-
                 document.getElementById('fcTotal').innerText = s.totalClassA;
                 document.getElementById('fcZero').innerText = s.fcZeroStock;
                 document.getElementById('fcPercent').innerText = ((s.fcZeroStock/s.totalClassA)*100).toFixed(2)+"%";
@@ -288,48 +256,62 @@
                 allClassAData = json.data;
                 const zeroStockItems = allClassAData.filter(r => parseFloat(r[5]) === 0);
                 renderSkuChart(zeroStockItems);
-                renderTableWithMode();
-                document.getElementById('lastUpdate').innerText = `Updated: ${new Date().toLocaleTimeString('th-TH')}`;
+                prepareDataForTable(); 
+                document.getElementById('lastUpdate').innerText = `ข้อมูลล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
             }
         } catch (err) { console.error(err); }
         finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
 
-    function renderTableWithMode() {
-        const thead = document.getElementById('tableHeader');
-        let displayData = [];
+    function prepareDataForTable() {
         if (currentMode === 'stockout') {
-            thead.innerHTML = `<tr><th>PO</th><th>Plant</th><th>Material</th><th>Description</th><th class="bg-danger text-white">Stock</th><th>Unit</th><th class="bg-warning text-dark">ยอดขาย 30 วัน</th></tr>`;
-            displayData = allClassAData.filter(r => parseFloat(r[5]) === 0);
+            filteredData = allClassAData.filter(r => parseFloat(r[5]) === 0);
         } else if (currentMode === 'doh') {
-            let sortIcon = (dohSortOrder === 'asc') ? '<i class="fas fa-sort-amount-down-alt ms-2"></i>' : '<i class="fas fa-sort-amount-up ms-2"></i>';
-            thead.innerHTML = `<tr><th>PO</th><th>Plant</th><th>Material</th><th>Description</th><th class="bg-secondary text-white">Stock</th><th class="bg-info text-white">Avg Sales/Day</th><th class="bg-primary text-white sortable-header" onclick="toggleDohSort()" title="เรียงลำดับ">DOH (วัน) ${sortIcon}</th></tr>`;
-            displayData = [...allClassAData].sort((a,b) => (dohSortOrder === 'asc') ? (a[8]-b[8]) : (b[8]-a[8]));
+            filteredData = [...allClassAData].sort((a,b) => (dohSortOrder === 'asc') ? (a[8]-b[8]) : (b[8]-a[8]));
         } else if (currentMode === 'forecast') {
-            let sortIcon = (dohSortOrder === 'asc') ? '<i class="fas fa-sort-amount-down-alt ms-2"></i>' : '<i class="fas fa-sort-amount-up ms-2"></i>';
-            thead.innerHTML = `<tr><th>Plant</th><th>Material</th><th class="bg-secondary text-white">Stock ปัจจุบัน</th><th class="bg-warning text-dark">รอรับ (Liters)</th><th class="bg-success text-white">รวม Stock (Calc)</th><th class="bg-info text-white">Avg Sale</th><th class="bg-purple text-white sortable-header" onclick="toggleDohSort()" title="เรียงลำดับ Forecast DOH">FC DOH ${sortIcon}</th></tr>`;
-            displayData = [...allClassAData].sort((a,b) => (dohSortOrder === 'asc') ? (a[12]-b[12]) : (b[12]-a[12]));
+            filteredData = [...allClassAData].sort((a,b) => (dohSortOrder === 'asc') ? (a[12]-b[12]) : (b[12]-a[12]));
         }
-        renderTableBody(displayData);
+        const v = document.getElementById('searchInput').value.toLowerCase();
+        if(v) filteredData = filteredData.filter(r => r.some(c => String(c).toLowerCase().includes(v)));
+        currentPage = 1; renderTablePage();
     }
 
-    function renderTableBody(rows) {
+    // 🔥 แก้ไขหัวตารางและข้อมูลในตาราง (ตัด PO ทิ้ง ใช้ชื่อสาขาแทน) 🔥
+    function renderTablePage() {
+        const thead = document.getElementById('tableHeader');
         const tbody = document.getElementById('tableBody');
-        const v = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = rows.filter(r => r.some(c => String(c).toLowerCase().includes(v)));
+        let htmlHead = '';
+        
+        // ⚠️ สังเกตว่าไม่มี PO แล้ว มีแต่ชื่อสาขา
+        if (currentMode === 'stockout') {
+            htmlHead = `<tr><th>ชื่อสาขา</th><th>Material</th><th>Description</th><th class="bg-danger text-white">Stock</th><th>Unit</th><th class="bg-warning text-dark">ยอดขาย 30 วัน</th></tr>`;
+        } else if (currentMode === 'doh') {
+            let sortIcon = (dohSortOrder === 'asc') ? '▼' : '▲';
+            htmlHead = `<tr><th>ชื่อสาขา</th><th>Material</th><th>Description</th><th class="bg-secondary text-white">Stock</th><th class="bg-info text-white">Avg Sale</th><th class="bg-primary text-white sortable-header" onclick="toggleDohSort()" style="cursor:pointer">DOH ${sortIcon}</th></tr>`;
+        } else if (currentMode === 'forecast') {
+            let sortIcon = (dohSortOrder === 'asc') ? '▼' : '▲';
+            htmlHead = `<tr><th>ชื่อสาขา</th><th>Material</th><th class="bg-secondary text-white">Stock</th><th class="bg-warning text-dark">รอรับ</th><th class="bg-success text-white">รวม</th><th class="bg-info text-white">Avg</th><th class="bg-purple text-white sortable-header" onclick="toggleDohSort()" style="cursor:pointer">FC DOH ${sortIcon}</th></tr>`;
+        }
+        thead.innerHTML = htmlHead;
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = filteredData.slice(start, end);
+
         let html = '';
-        if (filtered.length === 0) { html = '<tr><td colspan="100%" class="text-center py-5">ไม่พบข้อมูล</td></tr>'; } 
+        if (pageData.length === 0) { html = '<tr><td colspan="100%" class="text-center py-4">ไม่พบข้อมูล</td></tr>'; } 
         else {
-            filtered.forEach(row => {
+            pageData.forEach(row => {
                 let stock = Number(row[5]).toLocaleString();
                 let avgSale = Number(row[9]).toFixed(2);
                 html += '<tr>';
+                // ⚠️ ใช้ row[1] (ชื่อสาขา) เป็นคอลัมน์แรกแทน row[0]
                 if (currentMode === 'stockout') {
-                     html += `<td>${row[0]}</td><td>${row[1]}</td><td>${row[3]}</td><td class="text-start">${row[4]}</td><td class="fw-bold text-danger">0</td><td>${row[6]}</td><td class="fw-bold text-end">${Number(row[7]).toLocaleString()}</td>`;
+                     html += `<td>${row[1]}</td><td>${row[3]}</td><td class="text-start">${row[4]}</td><td class="fw-bold text-danger">0</td><td>${row[6]}</td><td class="fw-bold text-end">${Number(row[7]).toLocaleString()}</td>`;
                 } else if (currentMode === 'doh') {
                      let dohShow = (row[8] > 9000) ? "∞" : Number(row[8]).toFixed(2);
                      let dohClass = (row[8] < 7) ? "text-danger fw-bold" : (row[8] < 15) ? "text-warning fw-bold" : "text-success";
-                     html += `<td>${row[0]}</td><td>${row[1]}</td><td>${row[3]}</td><td class="text-start">${row[4]}</td><td>${stock}</td><td class="text-info">${avgSale}</td><td class="${dohClass}">${dohShow}</td>`;
+                     html += `<td>${row[1]}</td><td>${row[3]}</td><td class="text-start">${row[4]}</td><td>${stock}</td><td class="text-info">${avgSale}</td><td class="${dohClass}">${dohShow}</td>`;
                 } else if (currentMode === 'forecast') {
                      let pending = Number(row[10]);
                      let fcStock = Number(row[11]);
@@ -343,11 +325,20 @@
             });
         }
         tbody.innerHTML = html;
+        
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+        document.getElementById('pageInfo').innerText = `หน้า ${currentPage} / ${totalPages} (รวม ${filteredData.length} รายการ)`;
     }
-    
-    function filterTable() { renderTableWithMode(); }
-    function switchTab(mode) { currentMode = mode; document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + mode).classList.add('active'); renderTableWithMode(); }
-    function toggleDohSort() { dohSortOrder = (dohSortOrder === 'asc') ? 'desc' : 'asc'; renderTableWithMode(); }
+
+    function changePage(delta) {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= totalPages) { currentPage = newPage; renderTablePage(); }
+    }
+
+    function filterTable() { prepareDataForTable(); }
+    function switchTab(mode) { currentMode = mode; document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + mode).classList.add('active'); prepareDataForTable(); }
+    function toggleDohSort() { dohSortOrder = (dohSortOrder === 'asc') ? 'desc' : 'asc'; prepareDataForTable(); }
 
     function renderSkuChart(data) {
         const counts = {}; data.forEach(row => { const sku = row[4]; counts[sku] = (counts[sku] || 0) + 1; });
@@ -360,11 +351,12 @@
         const ctx=document.getElementById('myChart').getContext('2d'); if(myChart) myChart.destroy();
         myChart=new Chart(ctx,{type:'line',data:{labels:l,datasets:[{label:'% ของหมด',data:p,borderColor:'#e74c3c',fill:true,backgroundColor:'rgba(231,76,60,0.1)',tension:0.3}]},options:{responsive:true,maintainAspectRatio:false}});
     }} catch(e){}}
+    
     async function saveDailyStats() { if(!confirm("บันทึกสถิติ?"))return; document.getElementById('loadingOverlay').style.display='flex'; try{await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:'save_daily'})}); alert("Saved");}catch(e){alert("Error");} finally{document.getElementById('loadingOverlay').style.display='none';} }
-    function exportToExcel() { if (allClassAData.length===0){alert("No Data");return;} let data=[]; 
-        if(currentMode==='forecast'){ data.push(["Plant","Material","Desc","Stock","Pending","FcStock","AvgSale","FcDOH"]); allClassAData.forEach(r=>data.push([r[1],r[3],r[4],r[5],r[10],r[11],r[9],r[12]])); }
-        else{ data.push(["PO","Plant","Material","Stock","AvgSale","DOH"]); allClassAData.forEach(r=>data.push([r[0],r[1],r[3],r[5],r[9],r[8]])); }
-        const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Export"); XLSX.writeFile(wb,"Data.xlsx"); }
+    function exportToExcel() { if (filteredData.length===0){alert("No Data");return;} let data=[]; 
+        if(currentMode==='forecast'){ data.push(["Branch","Material","Desc","Stock","Pending","FcStock","AvgSale","FcDOH"]); filteredData.forEach(r=>data.push([r[1],r[3],r[4],r[5],r[10],r[11],r[9],r[12]])); }
+        else{ data.push(["Branch","Material","Stock","AvgSale","DOH"]); filteredData.forEach(r=>data.push([r[1],r[3],r[5],r[9],r[8]])); }
+        const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Export"); XLSX.writeFile(wb,"Dashboard_Data.xlsx"); }
 </script>
 </body>
 </html>
