@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script>
-        // ถ้าไม่มี User ในระบบ ให้เด้งกลับไปหน้า Dashboard ทันที
+        // Auth Guard: เช็ค Login
         if (!localStorage.getItem('user')) {
             alert('กรุณาเข้าสู่ระบบผ่านหน้า Dashboard ก่อนใช้งานหน้านี้');
             window.location.href = 'dashboard.html';
@@ -19,13 +19,11 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; padding-top: 70px; }
         
-        /* Navbar */
         .navbar-custom { background-color: #2c3e50; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .navbar-brand { color: white !important; font-weight: bold; }
         .nav-link { color: rgba(255,255,255,0.8) !important; transition: 0.3s; }
         .nav-link:hover { color: white !important; }
         
-        /* CSS เดิมของคุณ */
         .main-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 30px; }
         .card-header { background: #2c3e50; color: white; padding: 15px 20px; }
         
@@ -37,15 +35,12 @@
         .btn-bus { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: white; }
         .btn-calc { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
         .btn-clear { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        /* 🔥 ปุ่มหัวเชื้อ สีม่วง 🔥 */
+        .btn-purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
         
-        /* Loading Overlay */
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
-        .loading-box { background: white; padding: 30px 50px; border-radius: 15px; text-align: center; }
-
-        /* ซ่อนปุ่ม Admin */
-        .admin-only { display: none; }
         
-        /* ปรับตาราง */
+        .admin-only { display: none; }
         #dataTable { font-size: 0.85rem; width: 100%; }
         #dataTable th { background-color: #343a40; color: white; text-align: center; white-space: nowrap; }
         #dataTable td { vertical-align: middle; }
@@ -53,11 +48,11 @@
 </head>
 <body>
 
-<div id="loadingOverlay"><div class="loading-box"><div class="spinner-border text-primary" role="status"></div><div class="mt-3 fw-bold" id="loadingMessage">กำลังประมวลผล...</div></div></div>
+<div id="loadingOverlay"><div class="spinner-border text-white" role="status"></div><div class="mt-3 text-white fw-bold" id="loadingMessage">กำลังประมวลผล...</div></div>
 
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top navbar-dark">
     <div class="container">
-        <a class="navbar-brand" href="#"><i class="fas fa-cogs me-2"></i> ระบบจัดการสินค้า</a>
+        <a class="navbar-brand" href="dashboard.html"><i class="fas fa-cogs me-2"></i> ระบบจัดการสินค้า</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
@@ -94,8 +89,24 @@
             
             <div class="admin-only row g-3">
                 <div class="col-12"><h6 class="text-muted mb-2 fw-bold">⚡ คำสั่งจัดการข้อมูล (Admin)</h6></div>
-                <div class="col-md-6"><button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center"><i class="fas fa-calculator fa-lg"></i> <strong>กดเพื่อคำนวณ (Setup1)</strong></button></div>
-                <div class="col-md-6"><button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center"><i class="fas fa-trash-alt fa-lg"></i> <strong>เคลียร์ข้อมูลทั้งหมด</strong></button></div>
+                
+                <div class="col-md-4">
+                    <button onclick="runCalculate()" class="btn-big-upload btn-calc justify-content-center">
+                        <i class="fas fa-calculator fa-lg me-2"></i> <strong>คำนวณ (Setup1)</strong>
+                    </button>
+                </div>
+                
+                <div class="col-md-4">
+                    <button onclick="runAdditive()" class="btn-big-upload btn-purple justify-content-center">
+                        <i class="fas fa-flask fa-lg me-2"></i> <strong>ปรับหัวเชื้อเป็นคราส A</strong>
+                    </button>
+                </div>
+
+                <div class="col-md-4">
+                    <button onclick="runClearData()" class="btn-big-upload btn-clear justify-content-center">
+                        <i class="fas fa-trash-alt fa-lg me-2"></i> <strong>เคลียร์ข้อมูลทั้งหมด</strong>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -130,114 +141,84 @@
     let targetSheetName = ''; 
     let allData = [];
 
-    // --- MAIN INIT ---
     window.onload = function() {
-        // แสดงชื่อ User
         document.getElementById('userDisplay').innerText = localStorage.getItem('user');
-        
-        // เช็ค Admin เพื่อโชว์ปุ่มคำนวณ
         if (localStorage.getItem('role') === 'admin') {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+            document.querySelector('.admin-only').style.display = 'flex';
         } else {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            document.querySelector('.admin-only').style.display = 'none';
         }
-
-        loadData(); // โหลดตาราง
+        loadData();
     };
 
-    function logout() {
-        if(confirm("ยืนยันออกจากระบบ?")) {
-            localStorage.clear();
-            window.location.href = 'dashboard.html';
-        }
-    }
-
+    function logout() { if(confirm("ยืนยันออกจากระบบ?")) { localStorage.clear(); window.location.href = 'dashboard.html'; } }
     function showLoading(msg){ document.getElementById('loadingMessage').innerText=msg; document.getElementById('loadingOverlay').style.display='flex'; }
     function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
 
-    // --- API HANDLER (ฉบับแก้ไข: ส่งชื่อ User ไปด้วย) ---
+    // --- API CALLER (With Username for Logging) ---
     async function callAPI(action, payload = {}) {
-        // 1. ดึงชื่อ User ที่ Login แล้วออกมาจากเครื่อง
         const user = localStorage.getItem('user') || 'Guest';
-        
-        // 2. รวมชื่อ User เข้าไปในข้อมูลที่จะส่ง
-        const bodyData = JSON.stringify({ 
-            action: action, 
-            username: user,  // <--- บรรทัดนี้สำคัญมาก! ถ้าไม่มีจะเป็น Guest
-            ...payload 
-        });
-
         try {
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: bodyData
+                body: JSON.stringify({ action: action, username: user, ...payload })
             });
             return await response.json();
         } catch (e) {
-            alert("Error: " + e);
-            return null;
+            alert("Error: " + e); return null;
         }
     }
 
     // --- UPLOAD LOGIC ---
     function triggerGeneralUpload(name){ targetSheetName=name; generalFileInput.value=''; generalFileInput.click(); }
     generalFileInput.onchange = function(){ if(this.files.length) handleUpload(this.files[0], false); };
-    
     function triggerBusUpload(){ busFileInput.value=''; busFileInput.click(); }
     busFileInput.onchange = function(){ if(this.files.length) handleUpload(this.files[0], true); };
 
     async function handleUpload(file, isBus) {
         if(!confirm(`ยืนยันอัปโหลดไฟล์: ${file.name}?`)) return;
         showLoading("กำลังอัปโหลด...");
-        
         const reader = new FileReader();
         reader.onload = async function(e) {
             let content = e.target.result;
-            
-            // ถ้าเป็น Excel แปลงเป็น CSV ก่อน
             if(file.name.match(/\.(xlsx|xls)$/)) {
                 const workbook = XLSX.read(content, {type: 'binary'});
                 if(isBus) {
-                    // กรณีไฟล์เดินรถ (2 ชีท)
                     await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว1', fileContent: XLSX.utils.sheet_to_csv(workbook.Sheets["1"]) });
                     await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว2', fileContent: XLSX.utils.sheet_to_csv(workbook.Sheets["2"]) });
-                    hideLoading(); alert("✅ อัปโหลดไฟล์เดินรถเรียบร้อย");
-                    return;
+                    hideLoading(); alert("✅ อัปโหลดไฟล์เดินรถเรียบร้อย"); return;
                 }
-                // กรณีไฟล์ทั่วไป (ชีทแรก)
                 content = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
             }
-
             const res = await callAPI('upload', { sheetName: targetSheetName, fileContent: content });
             hideLoading();
             if(res && res.status === 'success') alert(res.message);
             else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
         };
-
-        if(file.name.match(/\.(xlsx|xls)$/)) reader.readAsBinaryString(file);
-        else reader.readAsText(file);
+        if(file.name.match(/\.(xlsx|xls)$/)) reader.readAsBinaryString(file); else reader.readAsText(file);
     }
 
     // --- BUTTON ACTIONS ---
     async function runCalculate(){ 
-        if(confirm("ยืนยันการคำนวณ (Setup1)?")){ 
-            showLoading("กำลังคำนวณ..."); 
-            const res = await callAPI('run_calculate');
+        if(confirm("ยืนยันการคำนวณ (Setup1)?")){ showLoading("กำลังคำนวณ..."); const res = await callAPI('run_calculate'); hideLoading();
+            if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } 
+    }
+    
+    // 🔥 ฟังก์ชันใหม่สำหรับปุ่มหัวเชื้อ 🔥
+    async function runAdditive(){ 
+        if(confirm("ยืนยันการปรับหัวเชื้อเป็น Class A?")){ 
+            showLoading("กำลังดำเนินการ..."); 
+            const res = await callAPI('run_additive'); 
             hideLoading();
-            if(res && res.status === 'success') { alert(res.message); loadData(); }
-            else alert("Error: " + (res ? res.message : "Unknown"));
+            if(res && res.status === 'success') { alert(res.message); } 
+            else alert("Error: " + (res ? res.message : "Unknown")); 
         } 
     }
 
     async function runClearData(){ 
-        if(confirm("⚠️ เตือน: ข้อมูลทั้งหมดจะถูกลบ!\nยืนยันการเคลียร์ข้อมูล?")){ 
-            showLoading("กำลังล้างข้อมูล..."); 
-            const res = await callAPI('run_clear');
-            hideLoading();
-            if(res && res.status === 'success') { alert(res.message); loadData(); }
-            else alert("Error: " + (res ? res.message : "Unknown"));
-        } 
+        if(confirm("⚠️ เตือน: ข้อมูลทั้งหมดจะถูกลบ!\nยืนยันการเคลียร์ข้อมูล?")){ showLoading("กำลังล้างข้อมูล..."); const res = await callAPI('run_clear'); hideLoading();
+            if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } 
     }
 
     // --- TABLE LOGIC ---
@@ -247,39 +228,29 @@
             allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))];
             renderTable(allData);
         }
+        hideLoading();
     }
-
     function renderTable(data){
         const table = document.getElementById('dataTable');
         let htmlHead = '<tr>'; data[0].forEach(h=>htmlHead+=`<th>${h}</th>`); htmlHead+='</tr>';
         document.getElementById('tableHead').innerHTML = htmlHead;
-        
         let htmlBody = '';
-        data.slice(1).forEach(row=>{
-            htmlBody+='<tr>'; row.forEach(c=>htmlBody+=`<td>${c}</td>`); htmlBody+='</tr>';
-        });
+        data.slice(1).forEach(row=>{ htmlBody+='<tr>'; row.forEach(c=>htmlBody+=`<td>${c}</td>`); htmlBody+='</tr>'; });
         document.getElementById('tableBody').innerHTML = htmlBody;
     }
-
     function filterTable(){
         const v = document.getElementById('searchInput').value.toLowerCase();
         const f = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v)));
         renderTable([allData[0], ...f]);
     }
-
     async function exportData() {
         showLoading("กำลัง Export...");
         const res = await callAPI('export');
         hideLoading();
         if (res && res.status === 'success') {
-            const ws=XLSX.utils.aoa_to_sheet(res.data); 
-            const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Data"); 
-            XLSX.writeFile(wb,"Full_Template_Data.xlsx");
-        } else {
-            alert('Export Error: ' + (res ? res.message : "Unknown"));
-        }
+            const ws=XLSX.utils.aoa_to_sheet(res.data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Data"); XLSX.writeFile(wb,"Full_Template_Data.xlsx");
+        } else { alert('Export Error: ' + (res ? res.message : "Unknown")); }
     }
 </script>
 </body>
-
 </html>
