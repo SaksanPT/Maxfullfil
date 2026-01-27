@@ -10,8 +10,8 @@
     
     <script>
         if (!localStorage.getItem('user')) {
-            // alert('กรุณา Login ผ่านหน้า Dashboard ก่อน'); // ปิดชั่วคราวเพื่อให้เทสได้ง่าย
-            // window.location.href = 'dashboard.html';
+            alert('กรุณา Login ผ่านหน้า Dashboard ก่อน');
+            window.location.href = 'dashboard.html';
         }
     </script>
 
@@ -25,7 +25,6 @@
         .card-header { background: #2c3e50; color: white; padding: 15px 20px; }
         .btn-big-upload { width: 100%; padding: 20px; font-size: 1.1rem; border-radius: 10px; transition: all 0.3s; border: none; display: flex; align-items: center; justify-content: flex-start; gap: 15px; text-align: left; }
         .btn-big-upload:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        
         .btn-me2n { background: linear-gradient(135deg, #1c4587 0%, #0d2a58 100%); color: white; }
         .btn-powerbi { background: linear-gradient(135deg, #f1c232 0%, #d4a017 100%); color: #212529; }
         .btn-bus { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: white; }
@@ -33,7 +32,6 @@
         .btn-clear { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
         .btn-purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
         .btn-orange { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; }
-        
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
         .admin-only { display: none; }
     </style>
@@ -96,10 +94,21 @@
     <div class="card main-card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="m-0"><i class="fas fa-boxes me-2"></i>รายการสินค้า (Template)</h5>
-            <button onclick="exportData()" class="btn btn-success btn-sm fw-bold"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+            <div>
+                <span id="pageInfo" class="me-3 text-white small"></span>
+                <button onclick="exportData()" class="btn btn-success btn-sm fw-bold"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+            </div>
         </div>
         <div class="card-body">
-            <div class="mb-3"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาข้อมูล..." onkeyup="filterTable()"></div>
+            <div class="d-flex justify-content-between mb-3">
+                <div class="w-50"><input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาข้อมูล..." onkeyup="filterTable()"></div>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
+                    <span id="pageNumber" class="mx-2 fw-bold">1</span>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="changePage(1)">ถัดไป <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            
             <div class="table-responsive">
                 <table class="table table-hover table-bordered" id="dataTable"><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table>
             </div>
@@ -136,18 +145,22 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
     const generalFileInput = document.getElementById('generalFileInput');
     const busFileInput = document.getElementById('busFileInput');
-    let targetSheetName = ''; let allData = [];
+    let targetSheetName = ''; 
+    
+    // Pagination Variables
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const rowsPerPage = 50; // 🔥 แสดงทีละ 50 บรรทัด (แก้ปัญหาเว็บช้า)
     let settingsModal = null; 
 
     window.onload = function() {
         const user = localStorage.getItem('user');
         document.getElementById('userDisplay').innerText = user || 'Guest';
-        
         if (localStorage.getItem('role') === 'admin') {
             document.querySelector('.admin-only').style.display = 'flex';
             document.getElementById('btnSettings').style.display = 'block';
         }
-        
         settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
         loadData();
     };
@@ -173,25 +186,17 @@
     function triggerBusUpload(){ busFileInput.value=''; busFileInput.click(); }
     busFileInput.onchange = function(){ if(this.files.length) handleUpload(this.files[0], true); };
 
-    // 🔥🔥🔥 ฟังก์ชันอัปโหลดที่แก้ไขแล้ว (สำคัญ!) 🔥🔥🔥
     async function handleUpload(file, isBus) {
         if(!confirm(`ยืนยันอัปโหลดไฟล์: ${file.name}?`)) return;
         showLoading("กำลังประมวลผลไฟล์...");
-        
         const reader = new FileReader();
-        
-        // 1. ตรวจสอบนามสกุลไฟล์แบบไม่สนตัวพิมพ์เล็กใหญ่ (Fix: .XLSX .xls .csv)
         const isExcel = file.name.match(/\.(xlsx|xls)$/i); 
 
         reader.onload = async function(e) {
             let content = e.target.result;
-            
-            // กรณีเป็น Excel (หรือ SAP export ที่เป็น HTML Table ปลอมตัวมา)
             if(isExcel) {
                 try {
-                    // อ่านแบบ Binary
                     const workbook = XLSX.read(content, {type: 'binary'});
-                    
                     if (isBus) {
                         const sheet1 = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
                         const sheet2 = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[1]]); 
@@ -199,31 +204,18 @@
                         await callAPI('upload', { sheetName: 'เที่ยวรถเที่ยว2', fileContent: sheet2 });
                         hideLoading(); alert("✅ อัปโหลดไฟล์เดินรถเรียบร้อย"); return;
                     } else {
-                        // แปลงชีทแรกเป็น CSV
                         content = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
                     }
                 } catch (err) {
-                    hideLoading();
-                    // ถ้าอ่านแบบ Binary ไม่ได้ อาจเป็นไฟล์ Text/HTML จาก SAP
-                    alert("Excel Parse Error: ระบบจะลองอ่านแบบ Text...");
-                    // ลองอ่านใหม่แบบ Text (Fallback) - ต้องเริ่ม process ใหม่
-                    // ในที่นี้แจ้งเตือนก่อน เพราะ FileReader อ่านไปแล้ว
-                    return;
+                    hideLoading(); alert("Excel Parse Error: ระบบจะลองอ่านแบบ Text..."); return;
                 }
             }
-            // ถ้าเป็น CSV หรือแปลงเสร็จแล้ว -> ส่งไปหลังบ้าน
             const res = await callAPI('upload', { sheetName: targetSheetName, fileContent: content });
             hideLoading();
             if(res && res.status === 'success') alert(res.message); 
             else alert("Upload Failed: " + (res ? res.message : "Unknown error"));
         };
-
-        // 2. สั่งอ่านไฟล์
-        if(isExcel) {
-            reader.readAsBinaryString(file); // อ่าน Excel ต้องใช้ BinaryString
-        } else {
-            reader.readAsText(file); // CSV อ่าน Text
-        }
+        if(isExcel) reader.readAsBinaryString(file); else reader.readAsText(file);
     }
 
     async function runCalculate(){ if(confirm("ยืนยันการคำนวณ (Setup1)?")){ showLoading("กำลังคำนวณ..."); const res = await callAPI('run_calculate'); hideLoading(); if(res && res.status === 'success') { alert(res.message); loadData(); } else alert("Error: " + (res ? res.message : "Unknown")); } }
@@ -265,9 +257,66 @@
         if (res && res.status === 'success') { alert(res.message); settingsModal.hide(); } else { alert("Error: " + (res ? res.message : "Unknown")); }
     }
 
-    async function loadData(){ const res = await callAPI('view'); if(res && res.status==='success' && res.data.length){ allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))]; renderTable(allData); } hideLoading(); }
-    function renderTable(data){ const table = document.getElementById('dataTable'); let htmlHead = '<tr>'; data[0].forEach(h=>htmlHead+=`<th>${h}</th>`); htmlHead+='</tr>'; document.getElementById('tableHead').innerHTML = htmlHead; let htmlBody = ''; data.slice(1).forEach(row=>{ htmlBody+='<tr>'; row.forEach(c=>htmlBody+=`<td>${c}</td>`); htmlBody+='</tr>'; }); document.getElementById('tableBody').innerHTML = htmlBody; }
-    function filterTable(){ const v = document.getElementById('searchInput').value.toLowerCase(); const f = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v))); renderTable([allData[0], ...f]); }
+    // 🔥🔥🔥 LOAD & PAGINATION SYSTEM 🔥🔥🔥
+    async function loadData(){ 
+        const res = await callAPI('view'); 
+        if(res && res.status==='success' && res.data.length){ 
+            allData = [res.data[0], ...res.data.slice(1).filter(r=>r.some(c=>String(c).trim()!==""))];
+            filteredData = allData.slice(1); // เก็บข้อมูลเนื้อหา (ตัด Header)
+            currentPage = 1;
+            renderTable(); 
+        } 
+        hideLoading(); 
+    }
+
+    function renderTable() {
+        const tableHead = document.getElementById('tableHead');
+        const tableBody = document.getElementById('tableBody');
+        
+        // Render Header
+        let htmlHead = '<tr>'; allData[0].forEach(h=>htmlHead+=`<th>${h}</th>`); htmlHead+='</tr>';
+        tableHead.innerHTML = htmlHead;
+
+        // Calculate Page Slice
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = filteredData.slice(start, end);
+
+        // Render Rows
+        let htmlBody = '';
+        if (pageData.length === 0) {
+            htmlBody = `<tr><td colspan="${allData[0].length}" class="text-center">ไม่พบข้อมูล</td></tr>`;
+        } else {
+            pageData.forEach(row=>{ 
+                htmlBody+='<tr>'; 
+                row.forEach(c=>htmlBody+=`<td>${c}</td>`); 
+                htmlBody+='</tr>'; 
+            });
+        }
+        tableBody.innerHTML = htmlBody;
+
+        // Update Page Info
+        document.getElementById('pageNumber').innerText = currentPage;
+        document.getElementById('pageInfo').innerText = `รายการที่ ${start+1} - ${Math.min(end, filteredData.length)} จากทั้งหมด ${filteredData.length}`;
+    }
+
+    function changePage(delta) {
+        const maxPage = Math.ceil(filteredData.length / rowsPerPage);
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= maxPage) {
+            currentPage = newPage;
+            renderTable();
+        }
+    }
+
+    function filterTable(){ 
+        const v = document.getElementById('searchInput').value.toLowerCase();
+        // กรองข้อมูลจาก allData ตัวแม่
+        filteredData = allData.slice(1).filter(r=>r.some(c=>String(c).toLowerCase().includes(v)));
+        currentPage = 1; // รีเซ็ตไปหน้าแรกเมื่อค้นหา
+        renderTable(); 
+    }
+
     async function exportData() { showLoading("กำลัง Export..."); const res = await callAPI('export'); hideLoading(); if (res && res.status === 'success') { const ws=XLSX.utils.aoa_to_sheet(res.data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Data"); XLSX.writeFile(wb,"Full_Template_Data.xlsx"); } else { alert('Export Error: ' + (res ? res.message : "Unknown")); } }
 </script>
 </body>
