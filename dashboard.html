@@ -16,6 +16,7 @@
         .nav-link { color: rgba(255,255,255,0.9) !important; cursor: pointer; }
         .nav-link:hover { color: white !important; }
 
+        /* Login Overlay (เริ่มต้นซ่อนไว้ display: none) */
         #login-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); z-index: 9999; 
@@ -23,6 +24,7 @@
         }
         .login-card { background: white; padding: 30px; border-radius: 15px; width: 350px; text-align: center; }
 
+        /* Stats Cards */
         .stat-card { background: white; border-radius: 12px; padding: 15px; text-align: center; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
         .stat-number { font-size: 1.8rem; font-weight: bold; }
         .border-blue { border-left-color: #3498db; } .text-blue { color: #3498db; }
@@ -37,6 +39,8 @@
         .border-purple { border-left-color: #9b59b6; } .text-purple { color: #9b59b6; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        
+        /* ซ่อนส่วนตารางไว้ก่อน */
         #restrictedSection { display: none; }
 
         .card-header-dark {
@@ -67,6 +71,7 @@
             <input type="password" id="password" class="form-control mb-3" placeholder="Password" required>
             <button type="submit" id="btnLoginSubmit" class="btn btn-danger w-100 fw-bold">Login</button>
         </form>
+        <button onclick="closeLogin()" class="btn btn-link text-secondary mt-2 btn-sm">ปิดหน้าต่าง</button>
         <div id="loginError" class="text-danger mt-2 small"></div>
     </div>
 </div>
@@ -173,7 +178,7 @@
     </div>
 
     <div id="loginPrompt" class="text-center py-5 bg-light border rounded mt-4">
-        <h5 class="text-muted mb-3"><i class="fas fa-lock me-2"></i> กรุณาเข้าสู่ระบบเพื่อดูข้อมูล</h5>
+        <h5 class="text-muted mb-3"><i class="fas fa-lock me-2"></i> กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดตารางข้อมูล</h5>
         <button onclick="openLogin()" class="btn btn-primary px-4">เข้าสู่ระบบ</button>
     </div>
 
@@ -192,29 +197,38 @@
     let currentPage = 1;
     const rowsPerPage = 50; 
 
-    window.onload = function() { checkAuthAndLoad(); };
+    window.onload = function() {
+        checkAuthAndLoad();
+    };
 
     function checkAuthAndLoad() {
         const user = localStorage.getItem('user');
+        
+        // 🔥 โหลดข้อมูลทันที ไม่ว่าจะมี User หรือไม่ (เพื่อแสดงกราฟ)
+        loadDashboardData();
+        loadHistoryChart();
+
         if (user) {
+            // ถ้า Login แล้ว -> โชว์เมนู User, โชว์ตาราง
             document.getElementById('btnLoginBtn').style.display = 'none';
             document.getElementById('userMenu').style.display = 'block';
             document.getElementById('userDisplay').innerText = user;
             document.getElementById('restrictedSection').style.display = 'block';
             document.getElementById('loginPrompt').style.display = 'none';
-            document.getElementById('login-overlay').style.display = 'none';
-            loadDashboardData();
-            loadHistoryChart();
         } else {
+            // ถ้ายังไม่ Login -> โชว์ปุ่ม Login, ซ่อนตาราง, โชว์คำเตือน
             document.getElementById('btnLoginBtn').style.display = 'block';
             document.getElementById('userMenu').style.display = 'none';
             document.getElementById('restrictedSection').style.display = 'none';
             document.getElementById('loginPrompt').style.display = 'block';
-            document.getElementById('login-overlay').style.display = 'flex';
         }
+        
+        // 🔥 บังคับปิด Popup (เพราะเราต้องการให้ดูหน้าเว็บได้เลย)
+        document.getElementById('login-overlay').style.display = 'none';
     }
 
     function openLogin() { document.getElementById('login-overlay').style.display = 'flex'; }
+    function closeLogin() { document.getElementById('login-overlay').style.display = 'none'; }
     
     async function handleLogin(e) {
         e.preventDefault();
@@ -228,7 +242,7 @@
             if (json.status === 'success') {
                 localStorage.setItem('user', json.username);
                 localStorage.setItem('role', json.role);
-                checkAuthAndLoad();
+                location.reload(); // รีโหลดเพื่อเคลียร์สถานะใหม่
             } else { document.getElementById('loginError').innerText = json.message; }
         } catch(err) { alert("Error: " + err); } finally { btn.innerHTML = 'Login'; btn.disabled = false; }
     }
@@ -256,7 +270,10 @@
                 allClassAData = json.data;
                 const zeroStockItems = allClassAData.filter(r => parseFloat(r[5]) === 0);
                 renderSkuChart(zeroStockItems);
+                
+                // เตรียมข้อมูลตารางไว้ (แม้จะยังไม่โชว์ตาราง ก็ต้องเตรียมไว้เผื่อ Login)
                 prepareDataForTable(); 
+                
                 document.getElementById('lastUpdate').innerText = `ข้อมูลล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
             }
         } catch (err) { console.error(err); }
@@ -276,13 +293,11 @@
         currentPage = 1; renderTablePage();
     }
 
-    // 🔥 แก้ไขหัวตารางและข้อมูลในตาราง (ตัด PO ทิ้ง ใช้ชื่อสาขาแทน) 🔥
     function renderTablePage() {
         const thead = document.getElementById('tableHeader');
         const tbody = document.getElementById('tableBody');
         let htmlHead = '';
         
-        // ⚠️ สังเกตว่าไม่มี PO แล้ว มีแต่ชื่อสาขา
         if (currentMode === 'stockout') {
             htmlHead = `<tr><th>ชื่อสาขา</th><th>Material</th><th>Description</th><th class="bg-danger text-white">Stock</th><th>Unit</th><th class="bg-warning text-dark">ยอดขาย 30 วัน</th></tr>`;
         } else if (currentMode === 'doh') {
@@ -305,7 +320,6 @@
                 let stock = Number(row[5]).toLocaleString();
                 let avgSale = Number(row[9]).toFixed(2);
                 html += '<tr>';
-                // ⚠️ ใช้ row[1] (ชื่อสาขา) เป็นคอลัมน์แรกแทน row[0]
                 if (currentMode === 'stockout') {
                      html += `<td>${row[1]}</td><td>${row[3]}</td><td class="text-start">${row[4]}</td><td class="fw-bold text-danger">0</td><td>${row[6]}</td><td class="fw-bold text-end">${Number(row[7]).toLocaleString()}</td>`;
                 } else if (currentMode === 'doh') {
