@@ -6,37 +6,86 @@
     <title>สั่งน้ำมันเครื่อง & Shipto</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f6f9; }
-        .main-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 20px; }
-        .card-header { background: #34495e; color: white; padding: 15px 20px; }
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f4f6f9; 
+            font-size: 16px; /* 🔥 เพิ่มขนาดฟอนต์พื้นฐาน */
+        }
         
-        .table { border-collapse: separate; border-spacing: 0; }
+        .main-card { 
+            border: none; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
+            background: white; 
+            margin-bottom: 20px; 
+        }
+        
+        .card-header { 
+            background: #34495e; 
+            color: white; 
+            padding: 15px 20px; 
+            font-size: 1.1rem;
+        }
+        
+        /* 🔥 ปรับแต่งตารางให้ใหญ่ขึ้น 🔥 */
         .table thead th { 
             background-color: #2c3e50; 
             color: white; 
-            vertical-align: middle;
+            vertical-align: middle; 
             text-align: center;
-            font-size: 0.9rem;
-            position: sticky; top: 0; z-index: 10;
+            font-size: 0.95rem;
+            padding: 12px 8px; /* เพิ่ม Padding หัวตาราง */
+            white-space: nowrap; /* ห้ามตัดคำในหัวตาราง */
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
         }
         
-        /* 🔥 กำหนดสี Class (บังคับสีทั้งแถว) 🔥 */
-        .bg-class-a, .bg-class-a > td { background-color: #d4edda !important; } /* A = เขียว */
-        .bg-class-b, .bg-class-b > td { background-color: #fff3cd !important; } /* B = เหลือง */
-        .bg-class-c, .bg-class-c > td { background-color: #f8d7da !important; } /* C = แดง */
-        
-        .qty-input { 
-            width: 100px; 
-            text-align: center; 
-            border: 2px solid #ced4da; 
-            border-radius: 5px;
-            background-color: #fff !important; /* ช่องกรอกสีขาวเสมอ */
+        .table tbody td {
+            vertical-align: middle;
+            padding: 10px 8px; /* เพิ่ม Padding เนื้อหา */
+            font-size: 0.95rem;
         }
-        .qty-input:focus { border-color: #3498db; box-shadow: 0 0 5px rgba(52,152,219,0.5); outline: none; }
 
+        /* กำหนดความกว้างขั้นต่ำ เพื่อไม่ให้ตารางบีบ */
+        .col-station-id { min-width: 80px; text-align: center; }
+        .col-station-name { min-width: 200px; }
+        .col-class { min-width: 60px; text-align: center; }
+        .col-mat-id { min-width: 100px; text-align: center; }
+        .col-mat-name { min-width: 250px; }
+        .col-num { min-width: 80px; text-align: right; }
+        .col-input { min-width: 100px; text-align: center; }
+
+        /* 🔥 Logic สี Class (บังคับสี) 🔥 */
+        table.table tbody tr.bg-class-a > td { background-color: #d1e7dd !important; }
+        table.table tbody tr.bg-class-b > td { background-color: #fff3cd !important; }
+        table.table tbody tr.bg-class-c > td { background-color: #f8d7da !important; }
+        
+        /* ช่องกรอกจำนวน */
+        .qty-input { 
+            width: 100%; 
+            max-width: 120px;
+            height: 38px; /* สูงขึ้น */
+            text-align: center; 
+            border: 1px solid #ced4da; 
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: #fff !important; 
+        }
+        .qty-input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.25); }
+        
+        /* Select2 ปรับให้ใหญ่ขึ้น */
+        .select2-container--bootstrap-5 .select2-selection { 
+            min-height: 45px; 
+            font-size: 1.1rem; 
+            padding-top: 5px;
+        }
+        
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
     </style>
 </head>
@@ -47,58 +96,66 @@
     <div class="mt-3 fw-bold text-primary">กำลังโหลดข้อมูล...</div>
 </div>
 
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between mb-3">
-        <a href="index.html" class="btn btn-outline-secondary rounded-pill px-4">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" href="dashboard.html"><i class="fas fa-gas-pump me-2"></i> สั่งน้ำมัน</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="index.html">หน้าจัดการ</a></li>
+                <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" href="oil_order.html">สั่งน้ำมัน</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 py-5" style="margin-top: 20px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="index.html" class="btn btn-outline-secondary btn-lg px-4">
             <i class="fas fa-arrow-left me-2"></i> กลับหน้าหลัก
         </a>
         <div class="d-flex gap-2">
-            <button onclick="clearShipto()" class="btn btn-danger rounded-pill px-4">
+            <button onclick="clearShipto()" class="btn btn-danger btn-lg px-4">
                 <i class="fas fa-trash-alt me-2"></i> เคลียร์ชีท Shipto
             </button>
-            <button onclick="saveData()" class="btn btn-primary rounded-pill px-4 fw-bold">
-                <i class="fas fa-save me-2"></i> บันทึกข้อมูลที่กรอก
+            <button onclick="saveData()" class="btn btn-primary btn-lg px-4 fw-bold shadow-sm">
+                <i class="fas fa-save me-2"></i> บันทึกข้อมูล
             </button>
         </div>
     </div>
 
     <div class="card main-card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="m-0"><i class="fas fa-gas-pump me-2"></i>สั่งน้ำมันเครื่อง & Shipto</h5>
-            <span class="badge bg-light text-dark fs-6" id="rowCount">0 รายการ</span>
+            <h5 class="m-0"><i class="fas fa-list me-2"></i>รายการสินค้า (POWER_BI)</h5>
+            <span class="badge bg-white text-dark fs-6 shadow-sm" id="rowCount">0 รายการ</span>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             
-            <div class="row g-2 mb-3">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="fas fa-filter text-primary"></i></span>
-                        <select id="plantFilter" class="form-select" onchange="filterTable()">
-                            <option value="">เลือกสถานี (ทั้งหมด)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหาชื่อสินค้า, รหัส..." onkeyup="filterTable()">
-                    </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted" style="font-size: 1.1rem;">เลือกสถานีที่ต้องการสั่งซื้อ:</label>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-primary"></i></span>
+                    <select id="stationSelect" class="form-select">
+                        <option value="">-- พิมพ์ชื่อสถานี หรือ รหัส เพื่อค้นหา --</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="table-responsive" style="max-height: 70vh;">
-                <table class="table table-bordered table-hover" id="oilTable">
+            <div class="table-responsive" style="max-height: 65vh; border: 1px solid #dee2e6;">
+                <table class="table table-bordered table-hover mb-0" id="oilTable">
                     <thead>
                         <tr>
-                            <th>รหัสสถานี</th>
-                            <th>ชื่อสถานี</th>
-                            <th>Class</th>
-                            <th>รหัสสินค้า</th>
-                            <th>ชื่อสินค้า</th>
-                            <th>คงเหลือที่สถานี(ชิ้น)</th>
-                            <th>ยอดระหว่างทาง(ชิ้น)</th>
-                            <th>ยอดขาย30วัน(ชิ้น)</th>
-                            <th class="bg-warning text-dark" style="width: 120px;">ยอดสั่ง</th>
+                            <th class="col-station-id">รหัสสถานี</th>
+                            <th class="col-station-name">ชื่อสถานี</th>
+                            <th class="col-class">Class</th>
+                            <th class="col-mat-id">รหัสสินค้า</th>
+                            <th class="col-mat-name">ชื่อสินค้า</th>
+                            <th class="col-num">คงเหลือ</th>
+                            <th class="col-num">ระหว่างทาง</th>
+                            <th class="col-num">ยอดขาย (30วัน)</th>
+                            <th class="bg-warning text-dark col-input">ยอดสั่ง</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -106,32 +163,22 @@
             </div>
             
             <div id="noDataMsg" class="text-center py-5 text-muted" style="display:none;">
-                <i class="fas fa-inbox fa-3x mb-3"></i><br>ไม่พบข้อมูล
+                <i class="fas fa-inbox fa-4x mb-3 text-secondary"></i><br>
+                <span class="fs-5">ไม่พบข้อมูล หรือ ยังไม่ได้เลือกสถานี</span>
             </div>
 
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
-    // ⚠️ แก้ URL ให้เป็น Deployment ล่าสุด ⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
-    // --- ฟังก์ชันสำหรับยิง API และส่งชื่อ User ไปด้วย (แปะโค้ดนี้ไว้ทุกหน้า) ---
-    async function callAPI(action, payload = {}) {
-        const user = localStorage.getItem('user') || 'Guest';
-        try {
-            const res = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: action, username: user, ...payload })
-            });
-            return await response.json();
-        } catch (e) {
-            console.error(e);
-            return null;
-        }
-    }
+    
     let allData = [];
 
     window.onload = loadData;
@@ -147,25 +194,49 @@
             
             if (json.status !== 'success') throw new Error(json.message);
 
-            allData = json.data; 
+            allData = json.data || [];
 
-            // 🔥 เรียงลำดับข้อมูลตาม Class (A -> B -> C)
-            allData.sort((a, b) => {
-                let classA = String(a[2] || '').trim().toUpperCase();
-                let classB = String(b[2] || '').trim().toUpperCase();
-                if (classA < classB) return -1;
-                if (classA > classB) return 1;
-                return 0;
-            });
+            if (allData.length > 0) {
+                // Sort Logic
+                allData.sort((a, b) => {
+                    let cA = String(a[2] || '').trim().toUpperCase();
+                    let cB = String(b[2] || '').trim().toUpperCase();
+                    if (cA < cB) return -1; if (cA > cB) return 1; return 0;
+                });
+            }
             
-            populateFilter(allData, 1);
+            initSelect2(allData);
             renderTable(allData);
 
         } catch (err) { 
-            Swal.fire('Error', err.message, 'error');
+            console.error(err);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้: ' + err.message, 'error');
         } finally { 
             hideLoading(); 
         }
+    }
+
+    function initSelect2(data) {
+        const select = $('#stationSelect');
+        const stations = new Set();
+        data.forEach(r => { if (r[0] && r[1]) stations.add(`${r[0]} : ${r[1]}`); });
+        Array.from(stations).sort().forEach(st => { select.append(new Option(st, st, false, false)); });
+
+        select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'พิมพ์รหัส หรือ ชื่อสถานี เพื่อค้นหา...',
+            allowClear: true
+        });
+
+        select.on('select2:select', function (e) {
+            const selectedText = e.params.data.id; 
+            const stationCode = selectedText.split(' : ')[0]; 
+            const filtered = allData.filter(r => r[0] === stationCode);
+            renderTable(filtered);
+        });
+
+        select.on('select2:clear', function (e) { renderTable(allData); });
     }
 
     function renderTable(rows) {
@@ -182,60 +253,40 @@
         noData.style.display = 'none';
         let html = '';
         
-        rows.forEach((row, index) => {
-            // 🔥 Logic สี Class (ครอบคลุมทั้ง "A" และ "Class A")
-            let classVal = String(row[2]).trim().toUpperCase();
+        rows.forEach(row => {
+            // 🔥 Logic สี Class (แม่นยำขึ้น) 🔥
+            let classVal = String(row[2] || '').trim().toUpperCase();
             let rowClass = '';
 
-            if (classVal === 'A' || classVal.includes('CLASS A')) rowClass = 'bg-class-a';
-            else if (classVal === 'B' || classVal.includes('CLASS B')) rowClass = 'bg-class-b';
-            else if (classVal === 'C' || classVal.includes('CLASS C')) rowClass = 'bg-class-c';
+            // ตรวจสอบแบบเจาะจง (ป้องกันคำว่า CLASS ไป Trigger)
+            if (classVal === 'A' || classVal === 'CLASS A' || classVal.endsWith(' A')) {
+                rowClass = 'bg-class-a';
+            } else if (classVal === 'B' || classVal === 'CLASS B' || classVal.endsWith(' B')) {
+                rowClass = 'bg-class-b';
+            } else if (classVal === 'C' || classVal === 'CLASS C' || classVal.endsWith(' C')) {
+                rowClass = 'bg-class-c';
+            }
+
+            let sales30 = parseFloat(row[7]) || 0;
+            let salesShow = sales30.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
             html += `<tr class="${rowClass}">
-                        <td>${row[0]}</td>
-                        <td>${row[1]}</td>
-                        <td class="fw-bold text-center">${row[2]}</td>
-                        <td>${row[3]}</td>
-                        <td class="text-start">${row[4]}</td>
-                        <td class="text-end">${row[5]}</td>
-                        <td class="text-end">${row[6]}</td>
-                        <td class="text-end fw-bold text-primary">${row[7].toLocaleString()}</td>
-                        <td class="text-center p-1 bg-white">
-                            <input type="number" class="qty-input form-control-sm" 
-                                   placeholder="0">
+                        <td class="col-station-id fw-bold">${row[0]}</td>
+                        <td class="col-station-name">${row[1]}</td>
+                        <td class="col-class fw-bold text-center">${row[2]}</td>
+                        <td class="col-mat-id text-center">${row[3]}</td>
+                        <td class="col-mat-name">${row[4]}</td>
+                        <td class="col-num text-end">${row[5]}</td>
+                        <td class="col-num text-end">${row[6]}</td>
+                        <td class="col-num text-end fw-bold text-primary">${salesShow}</td>
+                        <td class="col-input p-1 bg-white">
+                            <input type="number" class="qty-input" placeholder="0">
                         </td>
-                     </tr>`;
+                      </tr>`;
         });
 
         tbody.innerHTML = html;
         document.getElementById('rowCount').innerText = `${rows.length.toLocaleString()} รายการ`;
-    }
-
-    function populateFilter(data, colIndex) {
-        const select = document.getElementById('plantFilter');
-        const uniqueValues = [...new Set(data.map(r => r[colIndex]))].sort();
-        
-        uniqueValues.forEach(val => {
-            if(val) {
-                const option = document.createElement('option');
-                option.value = val;
-                option.text = val;
-                select.appendChild(option);
-            }
-        });
-    }
-
-    function filterTable() {
-        const plantVal = document.getElementById('plantFilter').value;
-        const searchVal = document.getElementById('searchInput').value.toLowerCase();
-
-        const filtered = allData.filter(row => {
-            const matchPlant = (plantVal === "") || (row[1] === plantVal);
-            const matchSearch = row.some(cell => String(cell).toLowerCase().includes(searchVal));
-            return matchPlant && matchSearch;
-        });
-
-        renderTable(filtered);
     }
 
     async function saveData() {
@@ -247,84 +298,40 @@
             if (val !== "" && parseFloat(val) > 0) {
                 let tr = input.closest('tr');
                 let tds = tr.querySelectorAll('td');
-                
-                let item = [
-                    tds[0].innerText, 
-                    tds[1].innerText, 
-                    tds[3].innerText, 
-                    tds[4].innerText, 
-                    val               
-                ];
-                itemsToSave.push(item);
+                itemsToSave.push([ 
+                    tds[0].innerText, // รหัสสถานี
+                    tds[1].innerText, // ชื่อสถานี
+                    tds[3].innerText, // รหัสสินค้า
+                    tds[4].innerText, // ชื่อสินค้า
+                    val 
+                ]);
             }
         });
 
-        if (itemsToSave.length === 0) {
-            Swal.fire('แจ้งเตือน', 'กรุณากรอกยอดสั่งอย่างน้อย 1 รายการ', 'warning');
-            return;
-        }
-
+        if (itemsToSave.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณากรอกยอดสั่งอย่างน้อย 1 รายการ', 'warning'); return; }
         if(!confirm(`ยืนยันการบันทึก ${itemsToSave.length} รายการ?`)) return;
 
         showLoading();
         try {
-            const res = await fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: 'save_shipto',
-                    items: itemsToSave
-                })
-            });
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'save_shipto', items: itemsToSave }) });
             const json = await res.json();
-            
-            if (json.status === 'success') {
-                Swal.fire('สำเร็จ', json.message, 'success');
-                inputs.forEach(inp => inp.value = '');
-            } else {
-                throw new Error(json.message);
-            }
-        } catch (err) {
-            Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
-        } finally {
-            hideLoading();
-        }
+            if (json.status === 'success') { Swal.fire('สำเร็จ', json.message, 'success'); inputs.forEach(inp => inp.value = ''); } 
+            else { throw new Error(json.message); }
+        } catch (err) { Swal.fire('เกิดข้อผิดพลาด', err.message, 'error'); } finally { hideLoading(); }
     }
 
     async function clearShipto() {
-        const result = await Swal.fire({
-            title: 'ยืนยันการล้างข้อมูล?',
-            text: "ข้อมูลทั้งหมดในชีต Shipto จะหายไป!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'ใช่, ลบเลย!',
-            cancelButtonText: 'ยกเลิก'
-        });
-
+        const result = await Swal.fire({ title: 'ยืนยันล้างข้อมูล?', text: "ข้อมูลจะหายไปถาวร!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบเลย!' });
         if (result.isConfirmed) {
             showLoading();
             try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: 'clear_shipto' })
-                });
+                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'clear_shipto' }) });
                 const json = await res.json();
-                
-                if (json.status === 'success') {
-                    Swal.fire('ลบแล้ว!', json.message, 'success');
-                } else {
-                    throw new Error(json.message);
-                }
-            } catch (err) {
-                Swal.fire('Error', err.message, 'error');
-            } finally {
-                hideLoading();
-            }
+                if (json.status === 'success') Swal.fire('ลบแล้ว!', json.message, 'success'); else throw new Error(json.message);
+            } catch (err) { Swal.fire('Error', err.message, 'error'); } finally { hideLoading(); }
         }
     }
 </script>
 
 </body>
-
 </html>
