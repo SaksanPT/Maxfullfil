@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>น้ำมันพืชมีสุข (Meesuk)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; padding-top: 70px; font-size: 16px; }
+        .navbar-custom { background-color: #198754; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .navbar-brand { color: white !important; font-weight: bold; }
+        .nav-link { color: rgba(255,255,255,0.9) !important; cursor: pointer; }
+        .nav-link:hover { color: white !important; }
+        
+        .main-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; background: white; margin-bottom: 20px; }
+        .card-header-custom { background-color: #198754; color: white; padding: 15px 20px; }
+        
+        .bg-red-pastel, .bg-red-pastel > td { background-color: #f8d7da !important; }
+        .bg-green-pastel, .bg-green-pastel > td { background-color: #d1e7dd !important; }
+        
+        .qty-input { width: 100px; text-align: center; border: 1px solid #ced4da; border-radius: 4px; }
+        
+        .select2-container--bootstrap-5 .select2-selection { min-height: 40px; font-size: 1rem; }
+        
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+
+        .btn-upload-custom {
+            border: 2px dashed #198754; background-color: #f8fdfa; color: #198754; font-weight: bold; transition: all 0.3s;
+        }
+        .btn-upload-custom:hover { background-color: #198754; color: white; border-color: #198754; }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="spinner-border text-success" role="status"></div>
+    <div class="mt-3 fw-bold text-success">กำลังโหลดข้อมูล...</div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="dashboard.html"><i class="fas fa-leaf me-2"></i> น้ำมันพืชมีสุข</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link" href="index.html">หน้าจัดการ</a></li>
+                <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" href="meesuk.html">น้ำมันพืชมีสุข</a></li>
+                <li class="nav-item"><a class="nav-link" href="oil_order.html">สั่งน้ำมัน</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="card main-card mb-4">
+        <div class="card-body text-center py-4">
+            <input type="file" id="fileInput" accept=".csv, .xlsx" style="display: none;" onchange="handleFileSelect(this)">
+            <button class="btn btn-upload-custom btn-lg w-100 py-3" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-upload-alt fa-2x mb-2 d-block"></i>
+                อัปโหลดไฟล์ POWERBI (มีสุข)
+            </button>
+            <div class="mt-2 text-muted small">* ระบบจะข้าม 3 แถวแรกให้อัตโนมัติ</div>
+        </div>
+    </div>
+
+    <div class="card main-card">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0"><i class="fas fa-list-ul me-2"></i> รายการสินค้า</h5>
+            
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <span class="badge bg-light text-success me-2 fs-6" id="rowCount">0 รายการ</span>
+                
+                <button onclick="exportExcel()" class="btn btn-success btn-sm fw-bold border-white">
+                    <i class="fas fa-file-excel me-1"></i> Export Template
+                </button>
+
+                <button onclick="clearData()" class="btn btn-danger btn-sm fw-bold">
+                    <i class="fas fa-trash-alt me-1"></i> ล้างข้อมูล
+                </button>
+
+                <button onclick="saveData()" class="btn btn-light text-success fw-bold btn-sm">
+                    <i class="fas fa-save me-1"></i> บันทึก
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-success"></i></span>
+                    <select id="stationSelect" class="form-select">
+                        <option value="">-- พิมพ์ชื่อสถานี หรือ รหัส เพื่อค้นหา --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 65vh;">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light text-center" style="position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th>Plan Code</th>
+                            <th>รหัส - สาขา</th>
+                            <th>Mat Code</th>
+                            <th>Product Name</th>
+                            <th>คงเหลือ (ชิ้น)</th>
+                            <th>ยอดขาย 30 วัน</th>
+                            <th>DOH</th>
+                            <th class="bg-warning">เติมสินค้า</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div id="noDataMsg" class="text-center py-4 text-muted" style="display:none;">
+                <i class="fas fa-inbox fa-3x mb-3"></i><br>ไม่พบข้อมูล
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // 🔥🔥🔥 ใส่ URL Web App ของไฟล์มีสุข (ที่ Deploy ใหม่ล่าสุด) 🔥🔥🔥
+    const MEESUK_API_URL = 'https://script.google.com/macros/s/AKfycbywpeU16C9a46Y2aLmPVjRiCmqlO8fon8a5cK1jfjh43n-D14lQn6At9xJmy7-eMipchQ/exec';
+    
+    let allData = [];
+
+    window.onload = loadData;
+
+    function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+    function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+    // --- 📥 โหลดข้อมูล ---
+    async function loadData() {
+        showLoading();
+        try {
+            const res = await fetch(MEESUK_API_URL + '?action=meesuk_data&t=' + new Date().getTime());
+            const json = await res.json();
+            
+            if (json.status === 'success') {
+                allData = processData(json.data);
+                initSelect2(allData);
+                renderTable(allData);
+            } else {
+                document.getElementById('noDataMsg').innerText = json.message;
+                document.getElementById('noDataMsg').style.display = 'block';
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับไฟล์มีสุขได้', 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // --- 🔄 ประมวลผลข้อมูล ---
+    function processData(data) {
+        if (!data) return [];
+        let processed = data.map(row => {
+            let stock = parseFloat(row[4]) || 0; 
+            let avgSale = parseFloat(row[5]) || 0; 
+            let sales30Days = avgSale * 30;
+            return { raw: row, stock: stock, sales30Days: sales30Days };
+        });
+
+        processed.sort((a, b) => {
+            const aIsRed = a.stock < a.sales30Days;
+            const bIsRed = b.stock < b.sales30Days;
+            if (aIsRed && !bIsRed) return -1;
+            if (!aIsRed && bIsRed) return 1;
+            return a.stock - b.stock;
+        });
+        
+        return processed;
+    }
+
+    // --- 🔎 Select2 ---
+    function initSelect2(data) {
+        const select = $('#stationSelect');
+        const stations = new Set();
+        data.forEach(item => { if(item.raw[1]) stations.add(item.raw[1]); });
+        Array.from(stations).sort().forEach(st => { select.append(new Option(st, st, false, false)); });
+        select.select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'พิมพ์รหัส หรือ ชื่อสถานี เพื่อค้นหา...', allowClear: true });
+        select.on('select2:select', function (e) {
+            const selectedText = e.params.data.id; 
+            const filtered = allData.filter(item => item.raw[1] === selectedText);
+            renderTable(filtered);
+        });
+        select.on('select2:clear', function (e) { renderTable(allData); });
+    }
+
+    // --- 📊 แสดงตาราง ---
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+            document.getElementById('noDataMsg').style.display = 'block';
+            document.getElementById('rowCount').innerText = '0 รายการ';
+            return;
+        }
+        document.getElementById('noDataMsg').style.display = 'none';
+        document.getElementById('rowCount').innerText = `${data.length.toLocaleString()} รายการ`;
+
+        let html = '';
+        data.forEach(item => {
+            let row = item.raw;
+            let stock = item.stock;
+            let sales30 = item.sales30Days;
+            let rowClass = (stock < sales30) ? 'bg-red-pastel' : 'bg-green-pastel';
+
+            html += `<tr class="${rowClass}">
+                <td class="text-center">${row[0]}</td>
+                <td>${row[1]}</td>
+                <td class="text-center">${row[2]}</td>
+                <td>${row[3]}</td>
+                <td class="text-end fw-bold">${stock.toLocaleString()}</td>
+                <td class="text-end text-primary fw-bold">${sales30.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                <td class="text-center">${row[6]}</td>
+                <td class="text-center bg-white p-1">
+                    <input type="number" class="form-control qty-input mx-auto" placeholder="0">
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // --- 💾 บันทึก ---
+    async function saveData() {
+        const inputs = document.querySelectorAll('.qty-input');
+        let itemsToSave = [];
+        inputs.forEach(input => {
+            let val = input.value.trim();
+            if (val && parseFloat(val) > 0) {
+                let tr = input.closest('tr');
+                let tds = tr.querySelectorAll('td');
+                itemsToSave.push([ tds[0].innerText, tds[1].innerText, val ]);
+            }
+        });
+
+        if (itemsToSave.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณากรอกจำนวนอย่างน้อย 1 รายการ', 'warning'); return; }
+        if (!confirm(`ยืนยันบันทึก ${itemsToSave.length} รายการ?`)) return;
+
+        showLoading();
+        try {
+            const res = await fetch(MEESUK_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'save_meesuk', username: localStorage.getItem('user') || 'Guest', items: itemsToSave })
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success');
+                inputs.forEach(inp => inp.value = ''); 
+            } else { throw new Error(json.message); }
+        } catch (error) { Swal.fire('Error', error.message, 'error'); } finally { hideLoading(); }
+    }
+
+    // --- 🗑️ ล้างข้อมูล ---
+    async function clearData() {
+        const result = await Swal.fire({
+            title: 'ยืนยันการล้างข้อมูล?',
+            text: "ข้อมูลในชีท 'เติมสินค้าน้ำมันพืช' จะถูกลบทั้งหมด!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'ลบเลย!'
+        });
+        if (result.isConfirmed) {
+            showLoading();
+            try {
+                const res = await fetch(MEESUK_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'clear_meesuk' })
+                });
+                const json = await res.json();
+                if (json.status === 'success') { Swal.fire('ลบแล้ว!', 'ข้อมูลถูกล้างเรียบร้อย', 'success'); } 
+                else { throw new Error(json.message); }
+            } catch (error) { Swal.fire('Error', error.message, 'error'); } finally { hideLoading(); }
+        }
+    }
+
+    // --- 📥 Export Excel (เพิ่มใหม่) ---
+    async function exportExcel() {
+        showLoading();
+        try {
+            const res = await fetch(MEESUK_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'export_template' })
+            });
+            const json = await res.json();
+            
+            if (json.status === 'success') {
+                // เปิดลิ้งค์ดาวน์โหลดใน Tab ใหม่
+                window.open(json.url, '_blank');
+                Swal.fire('สำเร็จ', 'ดาวน์โหลดไฟล์ Excel เรียบร้อย', 'success');
+            } else {
+                throw new Error(json.message);
+            }
+        } catch (error) {
+            Swal.fire('Error', 'ไม่สามารถ Export ได้: ' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // --- 📤 อัปโหลดไฟล์ ---
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        Swal.fire({
+            title: `ยืนยันอัปโหลดไฟล์?`,
+            text: file.name,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'อัปโหลดเลย'
+        }).then((result) => {
+            if (result.isConfirmed) { processUpload(file); } 
+            else { input.value = ''; }
+        });
+    }
+
+    async function processUpload(file) {
+        showLoading();
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            let content = e.target.result;
+            if (file.name.match(/\.(xlsx|xls)$/)) {
+                const workbook = XLSX.read(content, {type: 'binary'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                content = XLSX.utils.sheet_to_csv(sheet);
+            }
+            try {
+                const res = await fetch(MEESUK_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'upload_meesuk', fileContent: content })
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    Swal.fire('สำเร็จ', 'อัปโหลดเรียบร้อย', 'success').then(() => {
+                        document.getElementById('fileInput').value = '';
+                        loadData();
+                    });
+                } else { throw new Error(json.message); }
+            } catch (error) { Swal.fire('Error', error.message, 'error'); } finally { hideLoading(); }
+        };
+        if (file.name.match(/\.(xlsx|xls)$/)) reader.readAsBinaryString(file); else reader.readAsText(file);
+    }
+</script>
+
+</body>
+</html>
