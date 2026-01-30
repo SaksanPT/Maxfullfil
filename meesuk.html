@@ -132,7 +132,7 @@
 
 <script>
     // 🔥🔥🔥 ใส่ URL Web App ของไฟล์มีสุข (ที่ Deploy ใหม่ล่าสุด) 🔥🔥🔥
-    const MEESUK_API_URL = 'https://script.google.com/macros/s/AKfycbywpeU16C9a46Y2aLmPVjRiCmqlO8fon8a5cK1jfjh43n-D14lQn6At9xJmy7-eMipchQ/exec';
+    const MEESUK_API_URL = 'https://script.google.com/macros/s/AKfycbza2_UNrcZ8hgEeGfsbtI0nNgsxf4B2OCdeSxbkQfDDqnG1UPLNMAakiRoZNbp3KIWZxg/exec';
     
     let allData = [];
 
@@ -289,20 +289,35 @@
         }
     }
 
-    // --- 📥 Export Excel (เพิ่มใหม่) ---
+    // --- 📥 Export Excel (แบบรับไฟล์ตรงๆ ไม่ผ่าน Link) ---
     async function exportExcel() {
         showLoading();
         try {
             const res = await fetch(MEESUK_API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'export_template' })
+                body: JSON.stringify({ action: 'export_excel' })
             });
             const json = await res.json();
             
             if (json.status === 'success') {
-                // เปิดลิ้งค์ดาวน์โหลดใน Tab ใหม่
-                window.open(json.url, '_blank');
-                Swal.fire('สำเร็จ', 'ดาวน์โหลดไฟล์ Excel เรียบร้อย', 'success');
+                // 1. แปลง Base64 กลับเป็น Binary
+                var byteCharacters = atob(json.data);
+                var byteNumbers = new Array(byteCharacters.length);
+                for (var i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                var byteArray = new Uint8Array(byteNumbers);
+                var blob = new Blob([byteArray], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                
+                // 2. สร้าง Link ปลอมๆ เพื่อกดดาวน์โหลด
+                var link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = json.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                Swal.fire('สำเร็จ', 'ดาวน์โหลดไฟล์เรียบร้อย', 'success');
             } else {
                 throw new Error(json.message);
             }
