@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; }
@@ -42,8 +43,13 @@
             <select id="monthFilter" class="form-select w-auto" onchange="renderAllTables()">
                 <option value="">ทุกเดือน</option>
             </select>
+            
+            <button onclick="exportToExcel()" class="btn btn-success rounded-pill px-4 fw-bold">
+                <i class="fas fa-file-excel me-2"></i> Export Excel
+            </button>
+
             <button onclick="updateStats()" class="btn btn-primary rounded-pill px-4 fw-bold">
-                <i class="fas fa-sync-alt me-2"></i> อัปเดตข้อมูล
+                <i class="fas fa-sync-alt me-2"></i> คำนวณใหม่
             </button>
         </div>
     </div>
@@ -90,10 +96,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ⚠️ แก้ URL ⚠️
+    // ⚠️ URL Script ของคุณ
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweh5uYSuJKnjpbSlFmpYwaMtsem87_-WlgFMtUjf6J4Ol_wmTJQiIxvIhMPt1-Fw9B/exec';
     let allData = [];
-    // --- ฟังก์ชันสำหรับยิง API และส่งชื่อ User ไปด้วย (แปะโค้ดนี้ไว้ทุกหน้า) ---
+
     async function callAPI(action, payload = {}) {
         const user = localStorage.getItem('user') || 'Guest';
         try {
@@ -102,7 +108,7 @@
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: action, username: user, ...payload })
             });
-            return await response.json();
+            return await res.json(); // แก้ไข response -> res
         } catch (e) {
             console.error(e);
             return null;
@@ -117,6 +123,7 @@
     async function loadStats() {
         showLoading();
         try {
+            // ดึงข้อมูล action: delivery_stats
             const res = await fetch(SCRIPT_URL + '?action=delivery_stats&t=' + new Date().getTime());
             const json = await res.json();
             if (json.status !== 'success') throw new Error(json.message);
@@ -130,11 +137,66 @@
         if(!confirm("ยืนยันการประมวลผลข้อมูลใหม่?")) return;
         showLoading();
         try {
-            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'save_daily' }) });
+            // 🔥 แก้ Action ให้ตรงกับ Backend Code ล่าสุด (run_delivery_calc)
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: 'run_delivery_calc' }) });
             const json = await res.json();
-            if(json.status === 'success'){ Swal.fire('สำเร็จ', 'อัปเดตข้อมูลเรียบร้อยแล้ว', 'success'); loadStats(); } 
+            if(json.status === 'success'){ Swal.fire('สำเร็จ', 'ประมวลผลและบันทึกข้อมูลเรียบร้อยแล้ว', 'success'); loadStats(); } 
             else { throw new Error(json.message); }
         } catch(err) { Swal.fire('Error', err.message, 'error'); } finally { hideLoading(); }
+    }
+
+    // ✅ 3. ฟังก์ชัน Export Excel (ปรับปรุงใหม่)
+    function exportToExcel() {
+        if(!allData || allData.length === 0) {
+            Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลให้ Export', 'warning');
+            return;
+        }
+
+        // 1. ดึงค่า Filter ปัจจุบัน
+        const mVal = document.getElementById('monthFilter').value;
+        const sVal = document.getElementById('searchInput').value.toLowerCase();
+
+        // 2. กรองข้อมูลให้ตรงกับที่เห็นบนหน้าจอ
+        const filtered = allData.filter(row => {
+            const matchMonth = (mVal === "") || (row[0] === mVal);
+            const matchSearch = row.some(c => String(c).toLowerCase().includes(sVal));
+            return matchMonth && matchSearch;
+        });
+
+        if(filtered.length === 0) {
+            Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา', 'warning');
+            return;
+        }
+
+        // 3. แยกข้อมูลเป็น 2 ชุด (ทั่วไป / รถโอน)
+        // Header: ['เดือน', 'ชื่อสถานี', 'จำนวนเที่ยว', 'เฉลี่ยส่งทุกๆ(วัน)', 'จุดรับล่าสุด', 'ประเภทงาน']
+        const header = ['เดือน', 'ชื่อสถานี', 'จำนวนเที่ยว', 'เฉลี่ยส่งทุกๆ(วัน)', 'จุดรับล่าสุด', 'ประเภทงาน'];
+        
+        let generalRows = filtered.filter(r => r[5] !== 'รถโอน');
+        let transferRows = filtered.filter(r => r[5] === 'รถโอน');
+
+        // ใส่ Header เข้าไปเป็นแถวแรก
+        generalRows.unshift(header);
+        transferRows.unshift(header);
+
+        // 4. สร้าง Workbook
+        const wb = XLSX.utils.book_new();
+
+        // สร้าง Sheet งานทั่วไป
+        if (generalRows.length > 1) { // ต้องมากกว่า 1 เพราะมี Header
+            const ws1 = XLSX.utils.aoa_to_sheet(generalRows);
+            XLSX.utils.book_append_sheet(wb, ws1, "งานจัดส่งทั่วไป");
+        }
+
+        // สร้าง Sheet งานรถโอน
+        if (transferRows.length > 1) {
+            const ws2 = XLSX.utils.aoa_to_sheet(transferRows);
+            XLSX.utils.book_append_sheet(wb, ws2, "งานรถโอน");
+        }
+
+        // 5. ตั้งชื่อไฟล์และดาวน์โหลด
+        const fileName = `Delivery_Stats_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, fileName);
     }
 
     function renderAllTables() {
@@ -181,5 +243,4 @@
     }
 </script>
 </body>
-
 </html>
